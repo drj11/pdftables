@@ -1,0 +1,4 @@
+pdfminer>=20110515
+numpy>=1.6.2
+requests>=1.1.0
+matplotlib>=1.1.1

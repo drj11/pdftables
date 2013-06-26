@@ -27,7 +27,6 @@ setup(
     include_package_data=False,
     zip_safe=False,
     install_requires=[
-        'messytables>=0.10.0',
         'pdfminer>=20110515',
         'numpy>=1.6.2',
     ],

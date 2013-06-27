@@ -462,7 +462,6 @@ def page_to_tables(page, extend_y=False, hints=[], atomise=False):
         maxy = max(threshold_above(yhisttop, yThreshold))
     except ValueError:
         print "y threshold caught nothing"
-        return table_array, []
         if not hints:
             return table_array, []
 

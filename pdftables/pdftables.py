@@ -72,7 +72,11 @@ def get_tables(fh):
         interpreter.process_page(pdf_page)
         processed_page = device.get_result()
 
-        (table, _) = page_to_tables(processed_page, extend_y=True, hints=[])
+        (table, _) = page_to_tables(
+            processed_page,
+            extend_y=True,
+            hints=[],
+            atomise=True)
         result.append(table)
 
     return result

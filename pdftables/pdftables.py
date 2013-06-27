@@ -508,7 +508,7 @@ def page_to_tables(page, extend_y=False, hints=[], atomise=False):
     y_comb = comb_from_projection(row_projection, rowThreshold)
     y_comb.reverse()
 
-    columnThreshold = max(len(y_comb)*0.75,5)
+    # columnThreshold = max(len(y_comb)*0.75,5)
     x_comb = comb_from_projection(column_projection, columnThreshold)
 
 

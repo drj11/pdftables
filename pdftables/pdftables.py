@@ -63,16 +63,20 @@ def get_tables(fh):
     result = []
     doc, interpreter, device = initialize_pdf_miner(fh)
     for i, pdf_page in enumerate(doc.get_pages()):
-        print("Trying page {}".format(i + 1))
+        #print("Trying page {}".format(i + 1))
         if not page_contains_tables(pdf_page, interpreter, device):
-            print("Skipping page {}: no tables.".format(i + 1))
+            #print("Skipping page {}: no tables.".format(i + 1))
             continue
 
         # receive the LTPage object for the page.
         interpreter.process_page(pdf_page)
         processed_page = device.get_result()
 
-        (table, _) = page_to_tables(processed_page, extend_y=True, hints=[])
+        (table, _) = page_to_tables(
+            processed_page,
+            extend_y=True,
+            hints=[],
+            atomise=True)
         result.append(table)
 
     return result

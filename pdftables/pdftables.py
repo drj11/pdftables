@@ -479,7 +479,11 @@ def page_to_tables(page, extend_y=False, hints=[], atomise=False):
     # then get rid of all the boxes outside the range
 
     filtered_box_list = filter_box_list_by_position(
-        box_list, miny, maxy, Leaf._midline)
+        box_list, 
+        miny, 
+        maxy, 
+        Leaf._midline)
+        
     filtered_box_list = filter_box_list_by_position(
         filtered_box_list,
         minx,
@@ -495,12 +499,14 @@ def page_to_tables(page, extend_y=False, hints=[], atomise=False):
     row_projection = project_boxes(
         filtered_box_list, "row",
         erosion=erodelevel)
-
-    x_comb = comb_from_projection(column_projection, columnThreshold)
-
+        
     #
     y_comb = comb_from_projection(row_projection, rowThreshold)
     y_comb.reverse()
+
+    columnThreshold = max(len(y_comb)*0.75,5)
+    x_comb = comb_from_projection(column_projection, columnThreshold)
+
 
     # Extend y_comb to page size if extend_y is true
     if extend_y:

@@ -108,6 +108,7 @@ def initialize_pdf_miner(fh):
 
     # Set parameters for analysis.
     laparams = LAParams()
+    laparams.word_margin = 0.0    
     # Create a PDF page aggregator object.
     device = PDFPageAggregator(rsrcmgr, laparams=laparams)
     interpreter = PDFPageInterpreter(rsrcmgr, device)
@@ -195,7 +196,7 @@ def apply_combs(box_list, x_comb, y_comb):
     return table_array
 
 
-def g(column_projection, threshold):
+def comb_from_projection(column_projection, threshold):
     # TODO: sensible function name and docstring
     column_projection_threshold = threshold_above(column_projection, threshold)
 
@@ -499,10 +500,10 @@ def page_to_tables(page, extend_y=False, hints=[], atomise=False):
         filtered_box_list, "row",
         erosion=erodelevel)
 
-    x_comb = g(column_projection, columnThreshold)
+    x_comb = comb_from_projection(column_projection, columnThreshold)
 
     #
-    y_comb = g(row_projection, rowThreshold)
+    y_comb = comb_from_projection(row_projection, rowThreshold)
     y_comb.reverse()
 
     # Extend y_comb to page size if extend_y is true

@@ -48,9 +48,9 @@ def plotpage(d):
     fig = plt.figure()
     ax1 = fig.add_subplot(111)
     ax1.axis('equal')
-    for boxstruct in d.BoxList:
-        box = boxstruct[0]
-        thiscolour = ColourTable[boxstruct[1]]
+    for boxstruct in d.box_list:
+        box = boxstruct.bbox
+        thiscolour = ColourTable[boxstruct.classname]
         ax1.plot([box[0],box[2],box[2],box[0],box[0]],[box[1],box[1],box[3],box[3],box[1]],color = thiscolour )
 
     # fig.suptitle(title, fontsize=15)
@@ -61,29 +61,29 @@ def plotpage(d):
 
     plt.setp(ax1.get_yticklabels(),visible=False)
 
-    axHistx.plot(map(float,d.topPlot.keys()),map(float,d.topPlot.values()), color = 'red')
+    axHistx.plot(map(float,d.top_plot.keys()),map(float,d.top_plot.values()), color = 'red')
     #axHistx.scatter(map(float,xhistright.keys()),map(float,xhistright.values()), color = 'red')
-    axHisty.plot(map(float,d.leftPlot.values()),map(float,d.leftPlot.keys()), color = 'red')
+    axHisty.plot(map(float,d.left_plot.values()),map(float,d.left_plot.keys()), color = 'red')
     #axHisty.scatter(map(float,yhistbottom.values()),map(float,yhistbottom.keys()), color = 'red')
     #fig.suptitle('%s : Page %d' % (SelectedPDF,pagenumber), fontsize=15)
     # plt.draw()
 
-    if d.yComb:
-        miny = min(d.yComb)
-        maxy = max(d.yComb)
+    if d.y_comb:
+        miny = min(d.y_comb)
+        maxy = max(d.y_comb)
 
-        for x in d.xComb:
+        for x in d.x_comb:
             ax1.plot([x,x],[miny,maxy],color = "black")
             #axHistx.plot([x,x],[0,35],color = "black")
             axHistx.scatter(x,0,color = "black")
 
-    if d.xComb:
+    if d.x_comb:
         #minx = min([box.left for box in d.BoxList])
         #maxx = max([box.right for box in d.BoxList])
-        minx = min(d.xComb)
-        maxx = max(d.xComb)
+        minx = min(d.x_comb)
+        maxx = max(d.x_comb)
 
-        for y in d.yComb:
+        for y in d.y_comb:
             ax1.plot([minx,maxx],[y,y],color = "black")
             #axHisty.plot([0,8],[y,y],color = "black")
             axHisty.scatter(1,y,color = "black")

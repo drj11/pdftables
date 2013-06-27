@@ -104,6 +104,7 @@ def initialize_pdf_miner(fh):
 
     # Set parameters for analysis.
     laparams = LAParams()
+    laparams.word_margin = 0.0    
     # Create a PDF page aggregator object.
     device = PDFPageAggregator(rsrcmgr, laparams=laparams)
     interpreter = PDFPageInterpreter(rsrcmgr, device)

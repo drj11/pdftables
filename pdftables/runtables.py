@@ -40,8 +40,8 @@ hints = []
 # hints = ['Apellido', '']
 #SelectedPDF = "bo_page24.pdf" # 1 page Multi-column text and tables mixed on the page
 #pagenumber = 1 # Fails - need a multicolumn detector
-# SelectedPDF = "tabla_subsidios.pdf" # 1 page, fairly simple table
-# pagenumber = 1 # works fine
+#SelectedPDF = "tabla_subsidios.pdf" # 1 page, fairly simple table
+#pagenumber = 1 # works fine
 # SelectedPDF = "m27-dexpeg2-polymer.pdf" # No tables, two column text
 # SelectedPDF = "m29-JDent36s2-7.pdf" # One table, two column text, equations may cause problems?
 # pagenumber = 4 # Works OK but some - signs are missed and we need to use extend_y
@@ -55,9 +55,9 @@ SelectedPDF = "2012.01.PosRpt.pdf" # 7 pages works fine in pdfminer, 4 for first
 # hints = [u"% Change", u"Uncommited"]
 #pagenumber = 2 # Looks really nice
 #pagenumber = 3 # Looks really nice
-#pagenumber = 4 # the original!
+pagenumber = 4 # the original!
 #pagenumber = 5 # easier
-pagenumber = 6 # Columns welded: 21.94% 157, 201, 476 and where there is a spanning footer, cells overwriting
+#pagenumber = 6 # Columns welded: 21.94% 157, 201, 476 and where there is a spanning footer, cells overwriting
 #pagenumber = 7 # welding caused by isolated spanning text (fixed by dynamic threshold)
 
 # This needs "Get table from hints", really heavy hints!
@@ -68,7 +68,7 @@ filepath = os.path.join(PDF_TEST_FILES, SelectedPDF)
 fh = open(filepath, 'rb')
 pdf_page = get_pdf_page(fh, pagenumber)
 
-table, diagnosticData = page_to_tables(pdf_page, extend_y=True, hints=hints, atomise=True)
+table, diagnosticData = page_to_tables(pdf_page, extend_y=True, hints=hints, atomise=False)
 
 fig, ax1 = pta.plotpage(diagnosticData)
 

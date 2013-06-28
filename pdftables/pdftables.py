@@ -586,7 +586,7 @@ if __name__ == '__main__':
         with open(sys.argv[1], 'rb') as f:
             tables = get_tables(f)
             for i, table in enumerate(tables):
-                print("---- TABLE {} ----".format(i))
+                print("---- TABLE {} ----".format(i + 1))
                 print(to_string(table))
     else:
         print("Usage: {} <file.pdf>".format(sys.argv[0]))

@@ -77,9 +77,27 @@ def get_tables(fh):
             extend_y=True,
             hints=[],
             atomise=True)
+        crop_table(table)
         result.append(table)
 
     return result
+
+
+def crop_table(table):
+    """
+    Remove empty rows from the top and bottom of the table.
+    """
+    for row in list(table):  # top -> bottom
+        if not any(cell.strip() for cell in row):
+            table.remove(row)
+        else:
+            break
+
+    for row in list(reversed(table)):  # bottom -> top
+        if not any(cell.strip() for cell in row):
+            table.remove(row)
+        else:
+            break
 
 
 def initialize_pdf_miner(fh):

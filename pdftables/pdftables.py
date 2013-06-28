@@ -33,7 +33,7 @@ from tree import Leaf, LeafList
 import requests  # TODO: remove this dependency
 from cStringIO import StringIO
 import math
-import numpy
+import numpy # TODO: remove this dependency
 
 Y_THRESHOLD = 3      # TODO: name more helpfully
 COUNT_THRESHOLD = 3  # TODO: name more helpfully
@@ -185,7 +185,7 @@ def apply_combs(box_list, x_comb, y_comb):
     table_array = [[''] * ncolumns for j in range(nrows)]
     for box in box_list:
         y = round(box.midline)
-        x = round(box.left)
+        x = round(box.centreline)
         rowindex = comb(y_comb, y)
         columnindex = comb(x_comb, x)
         if rowindex != -1 and columnindex != -1:

@@ -40,7 +40,7 @@ class Leaf(object):
 
         (self.left, self.bottom, self.right, self.top) = self.bbox
         self.midline = (self.top+self.bottom)/2.0
-        self.centreline = (self.left+self.bottom)/2.0
+        self.centreline = (self.left+self.right)/2.0
         self.width = self.right-self.left
 
     def __getitem__(self, i):

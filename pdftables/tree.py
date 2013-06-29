@@ -79,7 +79,8 @@ def children(obj):
 
 class LeafList(list):
     def purge_empty_text(self):
-        return LeafList(box for box in self if box.text.strip() or box.classname != 'LTTextLineHorizontal')
+        return LeafList(box for box in self if box.text.strip() 
+                            or box.classname != 'LTTextLineHorizontal')
 
     def filterByType(self, flt=None):
         if not flt: return self

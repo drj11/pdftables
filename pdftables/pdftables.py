@@ -355,8 +355,8 @@ def rounder(val, tol):
     return round((1.0 * val) / tol) * tol
 
 
-def filter_box_list_by_type(box_list, flt):
-    return [box for box in box_list if box.classname in flt]
+#def filter_box_list_by_type(box_list, flt):
+#    return [box for box in box_list if box.classname in flt]
 
 
 def multi_column_detect(page):
@@ -438,68 +438,23 @@ def page_to_tables(page, extend_y=False, hints=[], atomise=False):
         raise TypeError("Page must be LTPage, not {}".format(page.__class__))
 
     table_array = []
-    # This threshold is for the crude table find
-    yThreshold = 3
+    
     # For LTTextLine horizontal column and row thresholds of 3 work ok
     columnThreshold = 5  # 3 works for smaller tables
     rowThreshold = 3
 
     if atomise:
-        flt = ['LTPage', 'LTChar']
+        flt = ['LTPage', 'LTTextLineHorizontal', 'LTChar']
     else:
         flt = ['LTPage', 'LTTextLineHorizontal']
     # flt = ['LTPage', 'LTTextLineHorizontal', 'LTFigure']
     box_list = LeafList().populate(page, flt).purge_empty_text()
+    
+    (minx, maxx, miny, maxy) = find_table_bounding_box(box_list, hints=hints)
 
-    """Detect Multiple columns test code"""
-    # Detect multiple columns
-    # pile, projection = multi_column_detect(page)
-    # diagnostic_data = TableDiagnosticData(box_list, projection, pile, [], [])
-    # fig, ax1 = ptA.plotpage(diagnostic_data)
-    """end multi-column test code"""
-
-    # print box_list.count
-    # detect table by seeing where x/y values are repeated to within tolerance
-    # This bit filters boxes based on y histogram - i.e. identifies vertical
-    # extent of table
-    # Look at the whole page
-
-    # Select the chunk of page to treat as a table
-    # want the bottom of the bottom cell
-    # print yhisttop
-
-    # by default take the whole page
-    miny = min([box.bottom for box in box_list])
-    maxy = max([box.top for box in box_list])
-    minx = min([box.left for box in box_list])
-    maxx = max([box.right for box in box_list])
-
-    """ Try to reduce the y range with a threshold, wouldn't work for x"""
-    yhisttop = box_list.histogram(Leaf._top).rounder(2)
-    yhistbottom = box_list.histogram(Leaf._bottom).rounder(2)
-
-    try:
-        miny = min(threshold_above(yhistbottom, yThreshold))
-    # and the top of the top cell
-        maxy = max(threshold_above(yhisttop, yThreshold))
-    except ValueError:
-        print "y threshold caught nothing"
-        if not hints:
-            return table_array, []
-
-    """The table miny and maxy can be modified by hints"""
-    if hints:
-        top_string = hints[0]  # "% Change"
-        bottom_string = hints[1]  # "15.67%"
-        hintedminy, hintedmaxy = get_min_and_max_y_from_hints(
-            box_list, top_string, bottom_string)
-        if hintedminy:
-            miny = hintedminy
-        if hintedmaxy:
-            maxy = hintedmaxy
-    """Modify table minx and maxx with hints? """
-    # then get rid of all the boxes outside the range
-
+    if atomise:
+        box_list = box_list.filterByType(['LTPage', 'LTChar'])
+           
     filtered_box_list = filter_box_list_by_position(
         box_list, 
         miny, 
@@ -549,7 +504,48 @@ def page_to_tables(page, extend_y=False, hints=[], atomise=False):
 
     return table_array, diagnostic_data
 
+def find_table_bounding_box(box_list, hints=[]):
+    """ Returns one bounding box (minx, maxx, miny, maxy) for tables based
+    on a boxlist
+    """
+    table_threshold = 3 # The number of columns which constitute a table
+    
+    miny = min([box.bottom for box in box_list])
+    maxy = max([box.top for box in box_list])
+    minx = min([box.left for box in box_list])
+    maxx = max([box.right for box in box_list])
 
+    """ Get rid of LTChar for this stage """
+    textLine_boxlist = box_list.filterByType('LTTextLineHorizontal')
+        
+    """ Try to reduce the y range with a threshold, wouldn't work for x"""
+    yhisttop = textLine_boxlist.histogram(Leaf._top).rounder(2)
+    yhistbottom = textLine_boxlist.histogram(Leaf._bottom).rounder(2)
+
+    try:
+        miny = min(threshold_above(yhistbottom, table_threshold))
+    # and the top of the top cell
+        maxy = max(threshold_above(yhisttop, table_threshold))
+    except ValueError:
+        raise ValueError("table_threshold caught nothing")
+
+    """The table miny and maxy can be modified by hints"""
+    if hints:
+        print "reached hints: ", miny, maxy
+        top_string = hints[0]  # "% Change"
+        bottom_string = hints[1]  # "15.67%"
+        hintedminy, hintedmaxy = get_min_and_max_y_from_hints(
+            textLine_boxlist, top_string, bottom_string)
+        if hintedminy:
+            miny = hintedminy
+        if hintedmaxy:
+            maxy = hintedmaxy
+        print "finished hints: ", miny, maxy
+    """Modify table minx and maxx with hints? """
+    # then get rid of all the boxes outside the range
+    
+    return (minx, maxx, miny, maxy)
+    
 def filter_box_list_by_position(box_list, minv, maxv, dir_fun):
     filtered_box_list = LeafList()
     # print minv, maxv, index

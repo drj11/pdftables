@@ -479,7 +479,7 @@ def page_to_tables(page, extend_y=False, hints=[], atomise=False):
     
     if atomise:
         # TODO should we include 'LTPage' 
-        box_list = box_list.filterByType(['LTChar'])
+        box_list = box_list.filterByType(['LTPage', 'LTChar'])
            
     filtered_box_list = filter_box_list_by_position(
         box_list, 
@@ -510,7 +510,9 @@ def page_to_tables(page, extend_y=False, hints=[], atomise=False):
     # columnThreshold = max(len(y_comb)*0.75,5)
     x_comb = comb_from_projection(column_projection, columnThreshold)
 
-
+    x_comb[0] = minx
+    x_comb[-1] = maxx
+    
     # Extend y_comb to page size if extend_y is true
     if extend_y:
         pageminy = min([box.bottom for box in box_list])

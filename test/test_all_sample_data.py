@@ -20,7 +20,7 @@ def test_sample_data():
 
 
 def _test_sample_pdf(short_filename):
-    with open(join(SAMPLE_DIR, short_filename)) as f:
+    with open(join(SAMPLE_DIR, short_filename),'rb') as f:
         tables = get_tables(f)
 
     assert_equal(get_expected_number_of_tables(short_filename), len(tables))

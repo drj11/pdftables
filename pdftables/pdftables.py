@@ -214,8 +214,13 @@ def apply_combs(box_list, x_comb, y_comb):
     return table_array
 
 
-def comb_from_projection(column_projection, threshold):
+def comb_from_projection(column_projection, threshold, orientation):
     # TODO: sensible function name and docstring
+    if orientation=="row":
+        tol=1        
+    elif orientation=="column":
+        tol=3
+        
     column_projection_threshold = threshold_above(column_projection, threshold)
 
     column_projection_threshold = sorted(column_projection_threshold)
@@ -235,7 +240,8 @@ def comb_from_projection(column_projection, threshold):
             lowers.append(column_projection_threshold[i])
     uppers.append(column_projection_threshold[-1])
         
-    comb = comb_from_uppers_and_lowers(uppers, lowers, projection = column_projection)
+    comb = comb_from_uppers_and_lowers(uppers, lowers, tol=tol,
+                                       projection = column_projection)
     comb.reverse()
 
     return comb
@@ -504,11 +510,11 @@ def page_to_tables(page, extend_y=False, hints=[], atomise=False):
         erosion=erodelevel)
         
     #
-    y_comb = comb_from_projection(row_projection, rowThreshold)
+    y_comb = comb_from_projection(row_projection, rowThreshold, "row")
     y_comb.reverse()
 
     # columnThreshold = max(len(y_comb)*0.75,5)
-    x_comb = comb_from_projection(column_projection, columnThreshold)
+    x_comb = comb_from_projection(column_projection, columnThreshold, "column")
 
     x_comb[0] = minx
     x_comb[-1] = maxx

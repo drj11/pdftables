@@ -53,9 +53,9 @@ pagenumber = 8 #good mix of text and table
 # Open a PDF file.
 
 SelectedPDF = "2012.01.PosRpt.pdf" # 7 pages works fine in pdfminer, 4 for first test 2012.01.PosRpt.pdf
-pagenumber = 1 # Table too small to find - needs hints
-hints = [u"% Change", u"Uncommited"]
-#pagenumber = 2 # Looks really nice
+#pagenumber = 1 # Table too small to find - needs hints
+#hints = [u"% Change", u"Uncommited"]
+pagenumber = 2 # Looks really nice
 #pagenumber = 3 # Looks really nice
 #pagenumber = 4 # the original!
 #pagenumber = 5 # easier

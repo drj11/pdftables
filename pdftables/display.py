@@ -13,6 +13,7 @@ def to_string(table):
     result = StringIO()
 
     (columns, rows) = get_dimensions(table)
+        
     result.write("     {} columns, {} rows\n".format(columns, rows))
     col_widths = find_column_widths(table)
     table_width = sum(col_widths) + len(col_widths) + 2
@@ -41,7 +42,10 @@ def get_dimensions(table):
     (3, 2)
     """
     rows = len(table)
-    cols = max(len(row) for row in table)
+    try:
+        cols = max(len(row) for row in table)
+    except ValueError:
+        cols = 0
     return (cols, rows)
 
 

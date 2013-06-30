@@ -28,11 +28,11 @@ hints = []
 #SelectedPDF = "COPAMONTHLYMay2013.pdf"
 #pagenumber = 1 # Fails because it's two column and there are two tables. May be fixed by local / adaptive minima
 SelectedPDF = "13_06_12_10_36_58_boletim_ingles_junho_2013.pdf" # 32 pages, Long document with many tables
-#pagenumber = 5 # No tables on this page
-pagenumber = 6
-pagenumber = 8 #good mix of text and table
-SelectedPDF = "1359397366Final_Coceral grain estimate_2012_December.pdf" #3 pages Slow to interpret
-pagenumber = 1 # couple of places where columns are welded, fixed with going to single characters
+pagenumber = 5 # No tables on this page
+#pagenumber = 6
+#pagenumber = 8 #good mix of text and table
+#SelectedPDF = "1359397366Final_Coceral grain estimate_2012_December.pdf" #3 pages Slow to interpret
+#pagenumber = 1 # couple of places where columns are welded, fixed with going to single characters
 #pagenumber = 2 # works without going to single characters
 #pagenumber = 3 # As for page 1 - some columns are welded, fixed with going to single characters
 #SelectedPDF = "ClinicalResearchDisclosureReport2012Q2.pdf"
@@ -76,7 +76,7 @@ filepath = os.path.join(PDF_TEST_FILES, SelectedPDF)
 fh = open(filepath, 'rb')
 pdf_page = get_pdf_page(fh, pagenumber)
 
-table, diagnosticData = page_to_tables(pdf_page, extend_y=False, hints=hints, atomise=True)
+table, diagnosticData = page_to_tables(pdf_page, extend_y=False, hints=hints, atomise=False)
 
 fig, ax1 = pta.plotpage(diagnosticData)
 

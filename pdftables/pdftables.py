@@ -40,7 +40,7 @@ COUNT_THRESHOLD = 3  # TODO: name more helpfully
 
 
 class TableDiagnosticData(object):
-    def __init__(self, box_list, top_plot, left_plot, x_comb, y_comb):
+    def __init__(self, box_list=LeafList(), top_plot=dict(), left_plot=dict(), x_comb=[], y_comb=[]):
         self.box_list = box_list
         self.top_plot = top_plot
         self.left_plot = left_plot
@@ -452,6 +452,11 @@ def page_to_tables(page, extend_y=False, hints=[], atomise=False):
     
     (minx, maxx, miny, maxy) = find_table_bounding_box(box_list, hints=hints)
 
+    """If miny and maxy are None then we found no tables and should exit"""
+    if miny is None and maxy is None:
+       print "found no tables"
+       return table_array, TableDiagnosticData()
+    
     if atomise:
         box_list = box_list.filterByType(['LTPage', 'LTChar'])
            
@@ -527,11 +532,13 @@ def find_table_bounding_box(box_list, hints=[]):
     # and the top of the top cell
         maxy = max(threshold_above(yhisttop, table_threshold))
     except ValueError:
-        raise ValueError("table_threshold caught nothing")
+        # Value errors raised when min and/or max fed empty lists
+        miny = None
+        maxy = None
+        #raise ValueError("table_threshold caught nothing")
 
     """The table miny and maxy can be modified by hints"""
     if hints:
-        print "reached hints: ", miny, maxy
         top_string = hints[0]  # "% Change"
         bottom_string = hints[1]  # "15.67%"
         hintedminy, hintedmaxy = get_min_and_max_y_from_hints(
@@ -540,13 +547,12 @@ def find_table_bounding_box(box_list, hints=[]):
             miny = hintedminy
         if hintedmaxy:
             maxy = hintedmaxy
-        print "finished hints: ", miny, maxy
     """Modify table minx and maxx with hints? """
-    # then get rid of all the boxes outside the range
     
     return (minx, maxx, miny, maxy)
     
 def filter_box_list_by_position(box_list, minv, maxv, dir_fun):
+    #TODO This should be in tree.py
     filtered_box_list = LeafList()
     # print minv, maxv, index
     for box in box_list:

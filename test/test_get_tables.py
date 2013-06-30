@@ -10,9 +10,18 @@ getTablesTests
 import sys
 sys.path.append('code')
 
-from pdftables import get_pdf_page, page_to_tables
+from pdftables import get_pdf_page, page_to_tables, TableDiagnosticData
 
 from nose.tools import *
+
+def test_it_exits_gracefully_when_no_tables_found():
+    fh = open('fixtures/sample_data/13_06_12_10_36_58_boletim_ingles_junho_2013.pdf', 'rb')
+    pdf_page = get_pdf_page(fh, 5)
+    table, table_diagnostic_data = page_to_tables(pdf_page)
+    
+    assert_equals([],table)
+    assert(isinstance(table_diagnostic_data, TableDiagnosticData))
+                                                  
 
 def test_it_can_use_hints_AlmondBoard_p1():
     fh = open('fixtures/sample_data/2012.01.PosRpt.pdf', 'rb')

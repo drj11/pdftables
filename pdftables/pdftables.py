@@ -458,7 +458,8 @@ def page_to_tables(page, extend_y=False, hints=[], atomise=False):
        return table_array, TableDiagnosticData()
     
     if atomise:
-        box_list = box_list.filterByType(['LTPage', 'LTChar'])
+        # TODO should we include 'LTPage' 
+        box_list = box_list.filterByType(['LTChar'])
            
     filtered_box_list = filter_box_list_by_position(
         box_list, 
@@ -500,6 +501,15 @@ def page_to_tables(page, extend_y=False, hints=[], atomise=False):
     # Applying the combs
     table_array = apply_combs(box_list, x_comb, y_comb)
 
+    # Strip out leading and trailing spaces when atomise true
+    # TODO
+    if atomise:
+        tmp_table = []
+        for row in table_array:
+            stripped_row = map(unicode.strip,row)
+            tmp_table.append(stripped_row)
+        table_array = tmp_table
+        
     diagnostic_data = TableDiagnosticData(
         filtered_box_list,
         column_projection,

@@ -28,9 +28,9 @@ hints = []
 #SelectedPDF = "COPAMONTHLYMay2013.pdf"
 #pagenumber = 1 # Fails because it's two column and there are two tables. May be fixed by local / adaptive minima
 SelectedPDF = "13_06_12_10_36_58_boletim_ingles_junho_2013.pdf" # 32 pages, Long document with many tables
-pagenumber = 5 # No tables on this page
+#pagenumber = 5 # No tables on this page
 #pagenumber = 6
-#pagenumber = 8 #good mix of text and table
+pagenumber = 8 #good mix of text and table
 #SelectedPDF = "1359397366Final_Coceral grain estimate_2012_December.pdf" #3 pages Slow to interpret
 #pagenumber = 1 # couple of places where columns are welded, fixed with going to single characters
 #pagenumber = 2 # works without going to single characters
@@ -52,9 +52,9 @@ pagenumber = 5 # No tables on this page
 #pagenumber = 5 # fails, very small table in two column layout, yComb is not ordered
 # Open a PDF file.
 
-#SelectedPDF = "2012.01.PosRpt.pdf" # 7 pages works fine in pdfminer, 4 for first test 2012.01.PosRpt.pdf
-#pagenumber = 1 # Table too small to find - needs hints
-#hints = [u"% Change", u"Uncommited"]
+SelectedPDF = "2012.01.PosRpt.pdf" # 7 pages works fine in pdfminer, 4 for first test 2012.01.PosRpt.pdf
+pagenumber = 1 # Table too small to find - needs hints
+hints = [u"% Change", u"Uncommited"]
 #pagenumber = 2 # Looks really nice
 #pagenumber = 3 # Looks really nice
 #pagenumber = 4 # the original!
@@ -76,7 +76,7 @@ filepath = os.path.join(PDF_TEST_FILES, SelectedPDF)
 fh = open(filepath, 'rb')
 pdf_page = get_pdf_page(fh, pagenumber)
 
-table, diagnosticData = page_to_tables(pdf_page, extend_y=False, hints=hints, atomise=False)
+table, diagnosticData = page_to_tables(pdf_page, extend_y=False, hints=hints, atomise=True)
 
 fig, ax1 = pta.plotpage(diagnosticData)
 

@@ -10,10 +10,18 @@ comb tests
 import sys
 sys.path.append('code')
 
-from pdftables import (comb, comb_extend, comb_from_uppers_and_lowers)
+from pdftables import (comb, comb_extend, 
+                       comb_from_uppers_and_lowers,
+                       find_minima)
 
 from nose.tools import assert_equals, raises
 
+def test_find_minima_works_in_simplest_case():
+    projection = {5:2,6:1,7:2}
+    assert_equals(6,find_minima(7, 5, projection=projection))
+    
+def test_find_minima_function_copes_with_multiple_values_at_minima():
+    pass
 
 def test_an_ascending_comb_is_extended_correctly():
     combarray = [2, 3, 4]

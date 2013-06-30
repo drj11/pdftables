@@ -234,27 +234,47 @@ def comb_from_projection(column_projection, threshold):
             uppers.append(column_projection_threshold[i - 1])
             lowers.append(column_projection_threshold[i])
     uppers.append(column_projection_threshold[-1])
-
-    comb = comb_from_uppers_and_lowers(uppers, lowers)
+        
+    comb = comb_from_uppers_and_lowers(uppers, lowers, projection = column_projection)
     comb.reverse()
 
     return comb
 
 
-def comb_from_uppers_and_lowers(uppers, lowers):
+def comb_from_uppers_and_lowers(uppers, lowers, tol=1, projection=dict()):
     # TODO: docstring
+    # tol is a tolerance to remove very small minima, increasing to 2 fowls up
+    # row separation
     assert len(uppers) == len(lowers)
     uppers.sort(reverse=True)
     lowers.sort(reverse=True)
     comb = []
     comb.append(uppers[0])
     for i in range(1, len(uppers)):
-        comb.append((lowers[i - 1] + uppers[i]) / 2.0)
-
+        if (lowers[i - 1]-uppers[i])>tol:
+            comb.append(find_minima(lowers[i - 1], uppers[i], projection))
+            #comb.append(find_minima(lowers[i - 1], uppers[i]))
+            
     comb.append(lowers[-1])
 
     return comb
 
+def find_minima(lower, upper, projection=dict()):
+        
+    #print lower, upper, projection
+    if len(projection)==0:
+        idx = (lower + upper) / 2.0
+    else:
+        profile = []    
+        for i in range(upper, lower):
+            #print projection[i]
+            profile.append(projection[i])
+        
+        val, idx = min((val, idx) for (idx, val) in enumerate(profile))
+        #val, idx = min(profile)
+        idx = upper + idx
+        
+    return idx
 
 def comb_extend(comb, minv, maxv):
     """Extend the comb to minv and maxv"""

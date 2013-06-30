@@ -22,7 +22,12 @@ def test_it_exits_gracefully_when_no_tables_found():
     assert_equals([],table)
     assert(isinstance(table_diagnostic_data, TableDiagnosticData))
                                                   
-
+def test_it_copes_with_CONAB_p8():
+    fh = open('fixtures/sample_data/13_06_12_10_36_58_boletim_ingles_junho_2013.pdf', 'rb')
+    pdf_page = get_pdf_page(fh, 8)
+    table, _ = page_to_tables(pdf_page, atomise=True)
+    
+    
 def test_it_can_use_hints_AlmondBoard_p1():
     fh = open('fixtures/sample_data/2012.01.PosRpt.pdf', 'rb')
     pdf_page = get_pdf_page(fh, 1)
@@ -67,7 +72,7 @@ def test_the_atomise_option_works_on_coceral_p1_by_size():
     pdf_page = get_pdf_page(fh, 1)
     table, _ = page_to_tables(pdf_page, atomise=True)
     #table1, _ = getTable(fh, 2)
-    assert_equals(46, len(table))
+    assert_equals(43, len(table))
     assert_equals(31, len(table[0]))
 
 def test_it_does_not_crash_on_m30_p5():

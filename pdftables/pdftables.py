@@ -35,9 +35,8 @@ from cStringIO import StringIO
 import math
 import numpy # TODO: remove this dependency
 
-Y_THRESHOLD = 3      # TODO: name more helpfully
-COUNT_THRESHOLD = 3  # TODO: name more helpfully
-
+IS_TABLE_COLUMN_COUNT_THRESHOLD = 3
+IS_TABLE_ROW_COUNT_THRESHOLD = 3
 
 class TableDiagnosticData(object):
     def __init__(self, box_list=LeafList(), top_plot=dict(), left_plot=dict(), x_comb=[], y_comb=[]):
@@ -47,13 +46,10 @@ class TableDiagnosticData(object):
         self.x_comb = x_comb
         self.y_comb = y_comb
 
-# index 0 = left, 1 = top, 2 = right, 3 = bottom
-# TODO: WTF is above comment and why does it disagree with below 'enum'?
 LEFT = 0
 TOP = 3
 RIGHT = 2
 BOTTOM = 1
-
 
 def get_tables(fh):
     """
@@ -156,8 +152,8 @@ def page_contains_tables(pdf_page, interpreter, device):
         assert isinstance(item, Leaf), "NOT LEAF"
     yhist = box_list.histogram(Leaf._top).rounder(1)
 
-    test = [k for k, v in yhist.items() if v > Y_THRESHOLD]
-    return len(test) > COUNT_THRESHOLD
+    test = [k for k, v in yhist.items() if v > IS_TABLE_COLUMN_COUNT_THRESHOLD]
+    return len(test) > IS_TABLE_ROW_COUNT_THRESHOLD
 
 
 def threshold_above(hist, threshold_value):
@@ -197,7 +193,7 @@ def comb(combarray, value):
 
 
 def apply_combs(box_list, x_comb, y_comb):
-    # TODO: docstring, I don't know what this does.
+    """Allocates text to table cells using the x and y combs"""
     ncolumns = len(x_comb) - 1
     nrows = len(y_comb) - 1
     table_array = [[''] * ncolumns for j in range(nrows)]
@@ -214,16 +210,19 @@ def apply_combs(box_list, x_comb, y_comb):
     return table_array
 
 
-def comb_from_projection(column_projection, threshold, orientation):
-    # TODO: sensible function name and docstring
+def comb_from_projection(projection, threshold, orientation):
+    """Calculates the boundaries between cells from the projection of the boxes
+    onto either the y axis (for rows) or the x-axis (for columns). These
+    boundaries are known as the comb
+    """
     if orientation=="row":
         tol=1        
     elif orientation=="column":
         tol=3
         
-    column_projection_threshold = threshold_above(column_projection, threshold)
+    projection_threshold = threshold_above(projection, threshold)
 
-    column_projection_threshold = sorted(column_projection_threshold)
+    projection_threshold = sorted(projection_threshold)
     # need to generate a list of uppers (right or top edges)
     # and a list of lowers (left or bottom edges)
 
@@ -232,23 +231,25 @@ def comb_from_projection(column_projection, threshold, orientation):
     uppers = []
     lowers = []
 
-    lowers.append(column_projection_threshold[0])
-    for i in range(1, len(column_projection_threshold)):
-        if column_projection_threshold[i] > (
-                column_projection_threshold[i-1] + 1):
-            uppers.append(column_projection_threshold[i - 1])
-            lowers.append(column_projection_threshold[i])
-    uppers.append(column_projection_threshold[-1])
+    lowers.append(projection_threshold[0])
+    for i in range(1, len(projection_threshold)):
+        if projection_threshold[i] > (
+                projection_threshold[i-1] + 1):
+            uppers.append(projection_threshold[i - 1])
+            lowers.append(projection_threshold[i])
+    uppers.append(projection_threshold[-1])
         
     comb = comb_from_uppers_and_lowers(uppers, lowers, tol=tol,
-                                       projection = column_projection)
+                                       projection = projection)
     comb.reverse()
 
     return comb
 
 
 def comb_from_uppers_and_lowers(uppers, lowers, tol=1, projection=dict()):
-    # TODO: docstring
+    """Called by comb_from_projection to calculate the comb given a set of
+    uppers and lowers, which are upper and lower edges of the thresholded
+    projection"""
     # tol is a tolerance to remove very small minima, increasing to 2 fowls up
     # row separation
     assert len(uppers) == len(lowers)
@@ -386,6 +387,7 @@ def rounder(val, tol):
 
 
 def multi_column_detect(page):
+    #TODO This function is under construction
     """
     Test for multiColumns from a box_list, returns an integer number of columns
     and a set of (left, right) pairs delineating any columns
@@ -483,8 +485,7 @@ def page_to_tables(page, extend_y=False, hints=[], atomise=False):
        print "found no tables"
        return table_array, TableDiagnosticData()
     
-    if atomise:
-        # TODO should we include 'LTPage' 
+    if atomise: 
         box_list = box_list.filterByType(['LTPage', 'LTChar'])
            
     filtered_box_list = filter_box_list_by_position(
@@ -530,7 +531,6 @@ def page_to_tables(page, extend_y=False, hints=[], atomise=False):
     table_array = apply_combs(box_list, x_comb, y_comb)
 
     # Strip out leading and trailing spaces when atomise true
-    # TODO
     if atomise:
         tmp_table = []
         for row in table_array:
@@ -551,7 +551,6 @@ def find_table_bounding_box(box_list, hints=[]):
     """ Returns one bounding box (minx, maxx, miny, maxy) for tables based
     on a boxlist
     """
-    table_threshold = 3 # The number of columns which constitute a table
     
     miny = min([box.bottom for box in box_list])
     maxy = max([box.top for box in box_list])
@@ -566,9 +565,9 @@ def find_table_bounding_box(box_list, hints=[]):
     yhistbottom = textLine_boxlist.histogram(Leaf._bottom).rounder(2)
 
     try:
-        miny = min(threshold_above(yhistbottom, table_threshold))
+        miny = min(threshold_above(yhistbottom, IS_TABLE_COLUMN_COUNT_THRESHOLD))
     # and the top of the top cell
-        maxy = max(threshold_above(yhisttop, table_threshold))
+        maxy = max(threshold_above(yhisttop, IS_TABLE_COLUMN_COUNT_THRESHOLD))
     except ValueError:
         # Value errors raised when min and/or max fed empty lists
         miny = None

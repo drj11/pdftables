@@ -22,10 +22,10 @@ def test_it_includes_page_numbers():
     assert_equals(result[1].page, 3)
     assert_equals(result[2].page_total, 4)
     assert_equals(result[2].page, 4)
-    
+
 def test_it_includes_table_numbers():
     fh = open('fixtures/sample_data/AnimalExampleTables.pdf', 'rb')
     result = get_tables(fh)
-    assert_equals(result[0].table_idx, 1)
-    assert_equals(result[0].table_idx_total, 1)
-    
+    assert_equals(result[0].table_index, 1)
+    assert_equals(result[0].table_index_total, 1)
+

@@ -108,7 +108,8 @@ def plotAllPages(fh):
     print "Created by: %s" % Creator
     #flt = 'LTTextLineHorizontal'
     #flt = ['LTPage','LTTextLineHorizontal']
-    flt = ['LTPage','LTFigure','LTLine','LTRect','LTImage','LTTextLineHorizontal','LTCurve']
+    # flt = ['LTPage','LTFigure','LTLine','LTRect','LTImage','LTTextLineHorizontal','LTCurve']
+    flt = ['LTPage','LTChar']
     for i,page in enumerate(doc.get_pages()):
         # page = next(doc.get_pages())
 

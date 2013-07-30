@@ -19,8 +19,8 @@ from display import to_string, get_dimensions
 from cStringIO import StringIO
 
 
-# PDF_TEST_FILES = os.path.join(os.pardir, 'fixtures\sample_data')
-PDF_TEST_FILES = 'fixtures\sample_data'
+PDF_TEST_FILES = os.path.join(os.pardir, 'fixtures\sample_data')
+#PDF_TEST_FILES = 'fixtures\sample_data'
 hints = []
 # SelectedPDF = "cit0613.pdf"
 # pagenumber = 1 # Wierd - each word is a figure?. First page can be broken
@@ -55,14 +55,14 @@ hints = []
 # Open a PDF file.
 
 SelectedPDF = "2012.01.PosRpt.pdf" # 7 pages works fine in pdfminer, 4 for first test 2012.01.PosRpt.pdf
-#pagenumber = 1 # Table too small to find - needs hints
-#hints = [u"% Change", u"Uncommited"]
+pagenumber = 1 # Table too small to find - needs hints
+hints = [u"% Change", u"Uncommited"]
 #pagenumber = 2 # Looks really nice
 #pagenumber = 3 # Looks really nice
 #pagenumber = 4 # the original!
 #pagenumber = 5 # easier
 #pagenumber = 6 # Columns welded: 21.94% 157, 201, 476 and where there is a spanning footer, cells overwriting
-pagenumber = 7 # welding caused by isolated spanning text (fixed by dynamic threshold)
+#pagenumber = 7 # welding caused by isolated spanning text (fixed by dynamic threshold)
 
 # This needs "Get table from hints", really heavy hints!
 #fh = pdftables.filehandleFromURL("http://www.candyusa.com/files/1st%20qtr%202013%20report.pdf")
@@ -74,14 +74,18 @@ pagenumber = 7 # welding caused by isolated spanning text (fixed by dynamic thre
 #SelectedPDF = "commodity-prices_en.pdf"
 #pagenumber = 1
 
+SelectedPDF = "AnimalExampleTables.pdf" # 7 pages works fine in pdfminer, 4 for first test 2012.01.PosRpt.pdf
+pagenumber = 2
+
 filepath = os.path.join(PDF_TEST_FILES, SelectedPDF)
 fh = open(filepath, 'rb')
-pta.plotAllPages(fh)
+#pta.plotAllPages(fh)
+
 
 
 pdf_page = get_pdf_page(fh, pagenumber)
 
-table, diagnosticData = page_to_tables(pdf_page, extend_y=False, hints=hints, atomise=True)
+table, diagnosticData = page_to_tables(pdf_page, extend_y=False, hints=hints, atomise=False)
 
 fig, ax1 = pta.plotpage(diagnosticData)
 

@@ -46,6 +46,14 @@ class TableDiagnosticData(object):
         self.x_comb = x_comb
         self.y_comb = y_comb
 
+class Table(list):
+    def __init__(self, content, page, page_total, table_idx, table_idx_total):
+        super(Table, self).__init__(content)
+        self.page = page
+        self.page_total = page_total
+        self.table_idx = table_idx
+        self.table_idx_total = table_idx_total
+
 LEFT = 0
 TOP = 3
 RIGHT = 2
@@ -58,6 +66,7 @@ def get_tables(fh):
     """
     result = []
     doc, interpreter, device = initialize_pdf_miner(fh)
+    doc_length = len(list(doc.get_pages()))
     for i, pdf_page in enumerate(doc.get_pages()):
         #print("Trying page {}".format(i + 1))
         if not page_contains_tables(pdf_page, interpreter, device):
@@ -74,7 +83,7 @@ def get_tables(fh):
             hints=[],
             atomise=True)
         crop_table(table)
-        result.append(table)
+        result.append(Table(table,i+1,doc_length,1,1))
 
     return result
 

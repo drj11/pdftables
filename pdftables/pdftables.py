@@ -49,10 +49,10 @@ class TableDiagnosticData(object):
 class Table(list):
     def __init__(self, content, page, page_total, table_index, table_index_total):
         super(Table, self).__init__(content)
-        self.page = page
-        self.page_total = page_total
-        self.table_index = table_index
-        self.table_index_total = table_index_total
+        self.page_number = page
+        self.total_pages = page_total
+        self.table_number_on_page = table_index
+        self.total_tables_on_page = table_index_total
 
 LEFT = 0
 TOP = 3

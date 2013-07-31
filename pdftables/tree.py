@@ -9,6 +9,7 @@ tree classes which hold the parsed PDF document data
 """
 
 import collections
+from counter import Counter
 
 def _rounder(val,tol):
      """
@@ -16,7 +17,7 @@ def _rounder(val,tol):
      """
      return round((1.0*val)/tol)*tol
 
-class Histogram(collections.Counter):
+class Histogram(Counter):
     def rounder(self, tol):
         c = Histogram()
         for item in self:
@@ -79,7 +80,7 @@ def children(obj):
 
 class LeafList(list):
     def purge_empty_text(self):
-        return LeafList(box for box in self if box.text.strip() 
+        return LeafList(box for box in self if box.text.strip()
                             or box.classname != 'LTTextLineHorizontal')
 
     def filterByType(self, flt=None):
@@ -100,4 +101,4 @@ class LeafList(list):
         return self
 
     def count(self):
-        return collections.Counter(x.classname for x in self)
+        return Counter(x.classname for x in self)

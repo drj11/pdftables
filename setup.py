@@ -7,7 +7,7 @@ PDFTables helps with extracting tables from PDF files.
 
 setup(
     name='pdftables',
-    version='0.0.1',
+    version='0.0.2',
     description="Parses PDFs and extracts what it believes to be tables.",
     long_description=long_desc,
     classifiers=[

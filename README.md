@@ -26,3 +26,5 @@ fig,ax1 = plotpage(diagnosticData)
 ```
 
 [1]: http://www.unixuser.org/~euske/python/pdfminer/
+[![Build Status](https://travis-ci.org/scraperwiki/pdftables.png)](https://travis-ci.org/scraperwiki/pdftables)
+

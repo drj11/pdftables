@@ -14,10 +14,10 @@ import lxml.html
 import glob
 import matplotlib.pyplot as plt
 import collections
-
+from counter import Counter
 
 # TODO - Use pdfminer
-# TODO 
+# TODO
 
 def pdftoxml(filename,options):
     ConverterPath = unicode(r'C:\Users\Ian\BitBucketRepos\0939-AgraInforma\bin\pdftohtml.exe')
@@ -26,15 +26,15 @@ def pdftoxml(filename,options):
     if tmpxml in os.listdir('.'):
         os.remove(tmpxml)
     cmd = '%s -xml %s "%s" %s' % (ConverterPath, options, filename, os.path.splitext(tmpxml)[0])
-    
+
     os.system(cmd)
-    
+
     f = open(tmpxml,'rb')
     content = f.read()
     f.close()
-    
-    return content 
-    
+
+    return content
+
 def processpage(page):
     left=[]
     width=[]
@@ -47,18 +47,18 @@ def processpage(page):
         width.append(thiswidth)
         top.append(pageheight - int(textchunk.attrib.get('top')))
         right.append(thisleft + thiswidth)
-        
+
     return pageheight,pagewidth,left,top,right
-    
+
 def plotpage(pageheight,pagewidth,pagenumber,SelectedPDF,left,top,right):
-    fig = plt.figure()       
+    fig = plt.figure()
     ax1 = fig.add_subplot(111)
-    ax1.axis('equal')    
+    ax1.axis('equal')
     ax1.plot([0,pagewidth,pagewidth,0,0],[0,0,pageheight,pageheight,0])
     ax1.scatter(left, top, s=10, c='b', marker="s")
     ax1.scatter(right, top, s=10, c='r', marker="o")
     fig.suptitle('%s : Page %d' % (SelectedPDF,pagenumber), fontsize=15)
-    plt.show()    
+    plt.show()
     return fig
 
 PDF_TEST_FILES = unicode(r'C:\Users\Ian\BitBucketRepos\0939-AgraInforma\fixtures')
@@ -88,17 +88,17 @@ xmldata = pdftoxml(os.path.join(PDF_TEST_FILES,SelectedPDF),options)
 root = lxml.etree.fromstring(xmldata)
 pages = list(root)
 
-# This is ok but 
+# This is ok but
 
 
 for page in pages:
     pagenumber = int(page.attrib.get("number"))
     pagewidth = int(page.attrib.get("width"))
     pageheight = int(page.attrib.get("height"))
-    
+
     pageheight,pagewidth,left,top,right = processpage(page)
 
     fig = plotpage(pageheight,pagewidth,pagenumber,SelectedPDF,left,top,right)
-    
-    
-    # counter=collections.Counter(left)
+
+
+    # counter=Counter(left)

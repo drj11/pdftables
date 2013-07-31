@@ -1,3 +1,3 @@
 #!/bin/bash
 
-git clone git@bitbucket.org:scraperwikids/pdftables-test-data.git fixtures/ 
+git clone https://bitbucket.org/scraperwikids/pdftables-test-data fixtures/

@@ -33,7 +33,7 @@ from tree import Leaf, LeafList
 import requests  # TODO: remove this dependency
 from cStringIO import StringIO
 import math
-import numpy # TODO: remove this dependency
+import numpy_subset
 from counter import Counter
 
 IS_TABLE_COLUMN_COUNT_THRESHOLD = 3
@@ -306,15 +306,15 @@ def comb_extend(comb, minv, maxv):
     minc = comb[0]
     maxc = comb[-1]
     # Get average row spacing
-    rowSpacing = numpy.average(numpy.diff(comb))
+    rowSpacing = numpy_subset.average(numpy_subset.diff(comb))
     # Extend minimum
     if minv < minc:
         comb.reverse()
-        comb.extend(list(numpy.arange(minc, minv, -rowSpacing))[1:])
+        comb.extend(list(numpy_subset.arange(minc, minv, -rowSpacing))[1:])
         comb.reverse()
     # Extend maximum
     if maxv > maxc:
-        comb.extend(list(numpy.arange(maxc, maxv, rowSpacing))[1:])
+        comb.extend(list(numpy_subset.arange(maxc, maxv, rowSpacing))[1:])
 
     if reversed:
         comb.reverse()

@@ -33,20 +33,19 @@ def test_it_can_use_hints_AlmondBoard_p1():
     pdf_page = get_pdf_page(fh, 1)
     table, _ = page_to_tables(pdf_page, hints=[u"% Change", u"Uncommited"])
     assert_equals(
-    [[u'', u'Million Lbs.', u'Kernel Wt.', u'Kernel Wt.', u'% Change'], 
+    [[u'Salable', u'Million Lbs.', u'Kernel Wt.', u'Kernel Wt.', u'% Change'], 
      [u'1.  Carryin August 1, 2011', u'254.0', u'253,959,411', u'321,255,129', u'-20.95%'], 
      [u'2.  Crop Receipts to Date', u'1,950.0', u'1,914,471,575', u'1,548,685,417', u'23.62%'], 
-     [u'3.  [3% Loss and Exempt]', u'58.5', u'57,434,147)(', u'46,460,563()', u''], 
+     [u'3.  [3% Loss and Exempt]', u'58.5', u'57,434,147)(', u'46,460,563(', u')'], 
      [u'4.  New Crop Marketable (2-3)', u'1,891.5', u'1,857,037,428', u'1,502,224,854', u'23.62%'], 
-     [u'5.  [Reserve]', u'n/a', u'0', u'0', u''], 
-     [u'6.  Total Supply (1+4-5)', u'2,145.5', u'2,110,996,839', u'1,823,479,983', u'15.77%'], 
-     [u'Shipments by Handlers7.  Domestic', u'555.0', u'265,796,698', u'255,785,794', u'3.91%'], 
+     [u'5.  [Reserve]', u'n/a', u'0', u'0', u''],
+     [u'6.  Total Supply (1+4-5)Shipments by Handlers', u'2,145.5', u'2,110,996,839', u'1,823,479,983', u'15.77%'], 
+     [u'7.  Domestic', u'555.0', u'265,796,698', u'255,785,794', u'3.91%'], 
      [u'8.  Export', u'1,295.0', u'755,447,255', u'664,175,807', u'13.74%'], 
      [u'9.  Total Shipments', u'1,850.0', u'1,021,243,953', u'919,961,601', u'11.01%'], 
      [u'10.  Forecasted Carryout', u'295.5', u'', u'', u''], 
-     [u'11.  Computed Inventory (6-9)', u'', u'1,089,752,886', u'903,518,382', u'20.61%'], 
-     [u'Commitments (sold, not delivered)**12.  Domestic', u'', u'214,522,238', u'187,492,263', u'14.42%'], 
-     [u'13.  Export', u'', u'226,349,446', u'155,042,764', u'45.99%'], 
+     [u'11.  Computed Inventory (6-9)Commitments (sold, not delivered)**', u'', u'1,089,752,886', u'903,518,382', u'20.61%'], 
+     [u'12.  Domestic', u'', u'214,522,238', u'187,492,263', u'14.42%'], [u'13.  Export', u'', u'226,349,446', u'155,042,764', u'45.99%'],
      [u'14.  Total Commited Shipments', u'', u'440,871,684', u'342,535,027', u'28.71%'], 
      [u'15.  Uncommited Inventory (11-14)', u'', u'648,881,202', u'560,983,355', u'15.67%']]
     , table)
@@ -65,7 +64,7 @@ def test_it_returns_the_AlmondBoard_p2_table_by_size():
     table1, _ = page_to_tables(pdf_page)
     #table1, _ = getTable(fh, 2)
     assert_equals(78, len(table1))
-    assert_equals(10, len(table1[0]))
+    assert_equals(9, len(table1[0]))
 
 def test_the_atomise_option_works_on_coceral_p1_by_size():
     fh = open('fixtures/sample_data/1359397366Final_Coceral grain estimate_2012_December.pdf', 'rb')

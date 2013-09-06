@@ -80,6 +80,9 @@ def children(obj):
 
 class LeafList(list):
     def purge_empty_text(self):
+        # TODO: BUG: we remove characters without adjusting the width / coords
+        #       which is kind of invalid.
+
         return LeafList(box for box in self if box.text.strip()
                             or box.classname != 'LTTextLineHorizontal')
 
@@ -93,9 +96,9 @@ class LeafList(list):
             assert type(item)==Leaf, item
         return Histogram(dir_fun(box) for box in self)
 
-    def populate(self, pdfpage, interested=['LTPage','LTTextLineHorizontal']):
-    # def populate(self, pdfpage, interested=['LTPage','LTChar']):
-        for obj in children(pdfpage):
+    def populate(self, pdf_page, interested=['LTPage','LTTextLineHorizontal']):
+    # def populate(self, pdf_page, interested=['LTPage','LTChar']):
+        for obj in children(pdf_page.lt_page()):
             if not interested or obj.__class__.__name__ in interested:
                 self.append(Leaf(obj))
         return self

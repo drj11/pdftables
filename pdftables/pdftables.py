@@ -21,11 +21,8 @@ http://denis.papathanasiou.org/2010/08/04/extracting-text-images-from-pdf-files
 import sys
 import codecs
 
-from pdfminer.pdfparser import PDFParser, PDFDocument
-from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
-from pdfminer.pdfdevice import PDFDevice
-from pdfminer.layout import LAParams, LTPage
-from pdfminer.converter import PDFPageAggregator
+from pdf_document import PDFDocument, PDFPage
+
 
 import collections
 
@@ -66,25 +63,22 @@ def get_tables(fh):
     list of rows, and a row is a list of strings.
     """
     result = []
-    doc, interpreter, device = initialize_pdf_miner(fh)
-    doc_length = len(list(doc.get_pages()))
-    for i, pdf_page in enumerate(doc.get_pages()):
+
+    pdf = PDFDocument(fh)
+
+    for i, pdf_page in enumerate(pdf.get_pages()):
         #print("Trying page {}".format(i + 1))
-        if not page_contains_tables(pdf_page, interpreter, device):
+        if not page_contains_tables(pdf_page):
             #print("Skipping page {}: no tables.".format(i + 1))
             continue
 
-        # receive the LTPage object for the page.
-        interpreter.process_page(pdf_page)
-        processed_page = device.get_result()
-
         (table, _) = page_to_tables(
-            processed_page,
+            pdf_page,
             extend_y=True,
             hints=[],
             atomise=True)
         crop_table(table)
-        result.append(Table(table,i+1,doc_length,1,1))
+        result.append(Table(table, i + 1, len(pdf), 1, 1))
 
     return result
 
@@ -106,58 +100,22 @@ def crop_table(table):
             break
 
 
-def initialize_pdf_miner(fh):
-    # Create a PDF parser object associated with the file object.
-    parser = PDFParser(fh)
-    # Create a PDF document object that stores the document structure.
-    doc = PDFDocument()
-    # Connect the parser and document objects.
-    parser.set_document(doc)
-    doc.set_parser(parser)
-    # Supply the password for initialization.
-    # (If no password is set, give an empty string.)
-    doc.initialize("")
-    # Check if the document allows text extraction. If not, abort.
-    if not doc.is_extractable:
-        raise ValueError("PDFDocument is_extractable was False.")
-    # Create a PDF resource manager object that stores shared resources.
-    rsrcmgr = PDFResourceManager()
-    # Create a PDF device object.
-    device = PDFDevice(rsrcmgr)
-    # Create a PDF interpreter object.
-    interpreter = PDFPageInterpreter(rsrcmgr, device)
-    # Process each page contained in the document.
-    # for page in doc.get_pages():
-    #    interpreter.process_page(page)
-
-    # Set parameters for analysis.
-    laparams = LAParams()
-    laparams.word_margin = 0.0
-    # Create a PDF page aggregator object.
-    device = PDFPageAggregator(rsrcmgr, laparams=laparams)
-    interpreter = PDFPageInterpreter(rsrcmgr, device)
-    return doc, interpreter, device
-
-
 def contains_tables(fh):
     """
     contains_tables(fh) takes a file handle and returns a boolean array of the
     length of the document which is true for pages which contains tables
     """
-    doc, interpreter, device = initialize_pdf_miner(fh)
+    pdf = PDFDocument(fh)
 
-    return [page_contains_tables(p, interpreter, device) for
-            p in doc.get_pages()]
+    return [page_contains_tables(page) for page in pdf.get_pages()]
 
 
-def page_contains_tables(pdf_page, interpreter, device):
-    # TODO: hide doc, interpreter, device inside a higher level Pdf class. It's
-    # silly that we have to care about these (see function signature!!)
+def page_contains_tables(pdf_page):
+    if not isinstance(pdf_page, PDFPage):
+        raise TypeError("Page must be PDFPage, not {}".format(
+            pdf_page.__class__))
 
-    interpreter.process_page(pdf_page)
-    # receive the LTPage object for the page.
-    layout = device.get_result()
-    box_list = LeafList().populate(layout)
+    box_list = LeafList().populate(pdf_page)
     for item in box_list:
         assert isinstance(item, Leaf), "NOT LEAF"
     yhist = box_list.histogram(Leaf._top).rounder(1)
@@ -353,22 +311,8 @@ def project_boxes(box_list, orientation, erosion=0):
 
 
 def get_pdf_page(fh, pagenumber):
-    doc, interpreter, device = initialize_pdf_miner(fh)
-    pages = list(doc.get_pages())
-
-    try:
-        page = pages[pagenumber - 1]
-    except IndexError:
-        raise IndexError("Invalid page number")
-
-    interpreter.process_page(page)
-    # receive the LTPage object for the page.
-    processedPage = device.get_result()
-    return processedPage
-
-# def getTable(fh, page, extend_y=False, hints=[]):
-#    """placeholder for tests, refactor out"""
-#    return page_to_tables(get_pdf_page(fh, page), extend_y, hints)
+    pdf = PDFDocument(fh)
+    return pdf.get_pages()[pagenumber - 1]
 
 
 def get_min_and_max_y_from_hints(box_list, top_string, bottom_string):
@@ -408,10 +352,8 @@ def multi_column_detect(page):
     # 3. Histogram of boxwidths with peak at some fraction of page width
     # This is like project_boxes but we are projecting the length of the
     # textbox onto the axis
-    box_list = LeafList().populate(
-        page, ['LTPage', 'LTTextLineHorizontal']).purge_empty_text()
+    box_list = LeafList().populate(page).purge_empty_text()
 
-    # Should use the LTPage object to get page bounding box
     box_list = filter_box_list_by_type(box_list, 'LTTextLineHorizontal')
     pile = {}
     vstep = 5  # should be scaled by modal row height
@@ -468,12 +410,12 @@ def multi_column_detect(page):
     return pile, projection
 
 
-def page_to_tables(page, extend_y=False, hints=[], atomise=False):
+def page_to_tables(pdf_page, extend_y=False, hints=[], atomise=False):
     """
     Get a rectangular list of list of strings from one page of a document
     """
-    if not isinstance(page, LTPage):
-        raise TypeError("Page must be LTPage, not {}".format(page.__class__))
+    if not isinstance(pdf_page, PDFPage):
+        raise TypeError("Page must be PDFPage, not {}".format(pdf_page.__class__))
 
     table_array = []
 
@@ -486,7 +428,7 @@ def page_to_tables(page, extend_y=False, hints=[], atomise=False):
     else:
         flt = ['LTPage', 'LTTextLineHorizontal']
     # flt = ['LTPage', 'LTTextLineHorizontal', 'LTFigure']
-    box_list = LeafList().populate(page, flt).purge_empty_text()
+    box_list = LeafList().populate(pdf_page, flt).purge_empty_text()
 
     (minx, maxx, miny, maxy) = find_table_bounding_box(box_list, hints=hints)
 

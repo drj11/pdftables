@@ -21,9 +21,7 @@ http://denis.papathanasiou.org/2010/08/04/extracting-text-images-from-pdf-files
 import sys
 import codecs
 
-from pdf_document import PDFDocument
-
-from pdfminer.layout import LTPage
+from pdf_document import PDFDocument, PDFPage
 
 
 import collections
@@ -69,14 +67,13 @@ def get_tables(fh):
     pdf = PDFDocument(fh)
 
     for i, pdf_page in enumerate(pdf.get_pages()):
-        lt_page = pdf_page.lt_page()
         #print("Trying page {}".format(i + 1))
-        if not page_contains_tables(lt_page):
+        if not page_contains_tables(pdf_page):
             #print("Skipping page {}: no tables.".format(i + 1))
             continue
 
         (table, _) = page_to_tables(
-            lt_page,
+            pdf_page,
             extend_y=True,
             hints=[],
             atomise=True)
@@ -110,15 +107,15 @@ def contains_tables(fh):
     """
     pdf = PDFDocument(fh)
 
-    return [page_contains_tables(page.lt_page()) for page in pdf.get_pages()]
+    return [page_contains_tables(page) for page in pdf.get_pages()]
 
 
-def page_contains_tables(lt_page):
-    if not isinstance(lt_page, LTPage):
-        raise TypeError("Page must be LTPage, not {}".format(
-            lt_page.__class__))
+def page_contains_tables(pdf_page):
+    if not isinstance(pdf_page, PDFPage):
+        raise TypeError("Page must be PDFPage, not {}".format(
+            pdf_page.__class__))
 
-    box_list = LeafList().populate(lt_page)
+    box_list = LeafList().populate(pdf_page)
     for item in box_list:
         assert isinstance(item, Leaf), "NOT LEAF"
     yhist = box_list.histogram(Leaf._top).rounder(1)
@@ -315,11 +312,7 @@ def project_boxes(box_list, orientation, erosion=0):
 
 def get_pdf_page(fh, pagenumber):
     pdf = PDFDocument(fh)
-    return pdf.get_pages()[pagenumber - 1].lt_page()
-
-# def getTable(fh, page, extend_y=False, hints=[]):
-#    """placeholder for tests, refactor out"""
-#    return page_to_tables(get_pdf_page(fh, page), extend_y, hints)
+    return pdf.get_pages()[pagenumber - 1]
 
 
 def get_min_and_max_y_from_hints(box_list, top_string, bottom_string):
@@ -359,10 +352,8 @@ def multi_column_detect(page):
     # 3. Histogram of boxwidths with peak at some fraction of page width
     # This is like project_boxes but we are projecting the length of the
     # textbox onto the axis
-    box_list = LeafList().populate(
-        page, ['LTPage', 'LTTextLineHorizontal']).purge_empty_text()
+    box_list = LeafList().populate(page).purge_empty_text()
 
-    # Should use the LTPage object to get page bounding box
     box_list = filter_box_list_by_type(box_list, 'LTTextLineHorizontal')
     pile = {}
     vstep = 5  # should be scaled by modal row height
@@ -419,12 +410,12 @@ def multi_column_detect(page):
     return pile, projection
 
 
-def page_to_tables(lt_page, extend_y=False, hints=[], atomise=False):
+def page_to_tables(pdf_page, extend_y=False, hints=[], atomise=False):
     """
     Get a rectangular list of list of strings from one page of a document
     """
-    if not isinstance(lt_page, LTPage):
-        raise TypeError("Page must be LTPage, not {}".format(lt_page.__class__))
+    if not isinstance(pdf_page, PDFPage):
+        raise TypeError("Page must be PDFPage, not {}".format(pdf_page.__class__))
 
     table_array = []
 
@@ -437,7 +428,7 @@ def page_to_tables(lt_page, extend_y=False, hints=[], atomise=False):
     else:
         flt = ['LTPage', 'LTTextLineHorizontal']
     # flt = ['LTPage', 'LTTextLineHorizontal', 'LTFigure']
-    box_list = LeafList().populate(lt_page, flt).purge_empty_text()
+    box_list = LeafList().populate(pdf_page, flt).purge_empty_text()
 
     (minx, maxx, miny, maxy) = find_table_bounding_box(box_list, hints=hints)
 

@@ -13,7 +13,7 @@ Analysis and visualisation library for pdftables
 """
 
 
-import pdftables as pt
+import pdftables
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from tree import Leaf, LeafList
@@ -45,7 +45,7 @@ def plotpage(d):
     # rowProj = dict(zip(rowProjectionThreshold, [rowDispHeight]*len(rowProjectionThreshold)))
     """End display only code"""
 
-    fig = plt.figure()
+    fig = matplotlib.pyplot.figure()
     ax1 = fig.add_subplot(111)
     ax1.axis('equal')
     for boxstruct in d.box_list:
@@ -55,7 +55,7 @@ def plotpage(d):
 
     # fig.suptitle(title, fontsize=15)
     divider = make_axes_locatable(ax1)
-    #plt.setp(ax1.get_yticklabels(),visible=False)
+    #matplotlib.pyplot.setp(ax1.get_yticklabels(),visible=False)
     ax1.yaxis.set_label_position("right")
 
     if d.top_plot: 
@@ -82,18 +82,18 @@ def plotpage(d):
             ax1.plot([minx,maxx],[y,y],color = "black")
             axHisty.scatter(1,y,color = "black")
 
-    plt.draw()
-    plt.show(block = False)
+    matplotlib.pyplot.draw()
+    matplotlib.pyplot.show(block = False)
 
     return fig, ax1
 
 def plothistogram(hist):
-    fig = plt.figure()
+    fig = matplotlib.pyplot.figure()
     ax1 = fig.add_subplot(111)
     # ax1.axis('equal')
     ax1.scatter(map(float,hist.keys()),map(float,hist.values()))
     #fig.suptitle('%s : Page %d' % (SelectedPDF,pagenumber), fontsize=15)
-    plt.draw()
+    matplotlib.pyplot.draw()
     return fig
 
 def plotAllPages(fh):
@@ -101,8 +101,8 @@ def plotAllPages(fh):
     
     fig_list = []
     ax1_list = []
-    
-    doc, interpreter, device = pt.initialize_pdf_miner(fh)
+
+    doc, interpreter, device = pdftables.initialize_pdf_miner(fh)
     # print SelectedPDF
     Creator = doc.info[0]['Creator']
     print "Created by: %s" % Creator
@@ -118,19 +118,19 @@ def plotAllPages(fh):
         layout = device.get_result()
         box_list = LeafList().populate(layout, interested = flt)
 
-        ModalHeight = pt.calculate_modal_height(box_list)
-        
-        diagnostic_data = pt.TableDiagnosticData(
+        ModalHeight = pdftables.calculate_modal_height(box_list)
+
+        diagnostic_data = pdftables.TableDiagnosticData(
                 box_list,
                 {},
                 {},
                 [],
                 [])
-        
+
         fig, ax1 = plotpage(diagnostic_data)
         fig_list.append(fig)
         ax1_list.append(ax1)
-        
+
         title = "page %d" % (i+1)
         fig.suptitle(title)
         #print "Page %d" % (i+1), ElementCount

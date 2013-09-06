@@ -73,16 +73,16 @@ class PDFPage(object):
 
         self.pdf_document = parent_pdf_document
         self._page = page
-        self._layout = None
+        self._lt_page = None
 
-    def layout(self):
-        if not self._layout:
+    def lt_page(self):
+        if not self._lt_page:
             self._parse_page()
 
-        return self._layout
+        return self._lt_page
 
     def _parse_page(self):
         self.pdf_document._interpreter.process_page(self._page)
-        self._layout = self.pdf_document._device.get_result()
-        assert isinstance(self._layout,
-                          pdfminer.layout.LTPage), self._layout.__class__
+        self._lt_page = self.pdf_document._device.get_result()
+        assert isinstance(self._lt_page,
+                          pdfminer.layout.LTPage), self._lt_page.__class__

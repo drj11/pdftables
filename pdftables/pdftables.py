@@ -69,14 +69,14 @@ def get_tables(fh):
     pdf = PDFDocument(fh)
 
     for i, pdf_page in enumerate(pdf.get_pages()):
-        layout = pdf_page.layout()
+        lt_page = pdf_page.lt_page()
         #print("Trying page {}".format(i + 1))
-        if not page_contains_tables(layout):
+        if not page_contains_tables(lt_page):
             #print("Skipping page {}: no tables.".format(i + 1))
             continue
 
         (table, _) = page_to_tables(
-            layout,
+            lt_page,
             extend_y=True,
             hints=[],
             atomise=True)
@@ -110,15 +110,15 @@ def contains_tables(fh):
     """
     pdf = PDFDocument(fh)
 
-    return [page_contains_tables(page.layout()) for page in pdf.get_pages()]
+    return [page_contains_tables(page.lt_page()) for page in pdf.get_pages()]
 
 
-def page_contains_tables(page_layout):
-    if not isinstance(page_layout, LTPage):
+def page_contains_tables(lt_page):
+    if not isinstance(lt_page, LTPage):
         raise TypeError("Page must be LTPage, not {}".format(
-            page_layout.__class__))
+            lt_page.__class__))
 
-    box_list = LeafList().populate(page_layout)
+    box_list = LeafList().populate(lt_page)
     for item in box_list:
         assert isinstance(item, Leaf), "NOT LEAF"
     yhist = box_list.histogram(Leaf._top).rounder(1)
@@ -315,7 +315,7 @@ def project_boxes(box_list, orientation, erosion=0):
 
 def get_pdf_page(fh, pagenumber):
     pdf = PDFDocument(fh)
-    return pdf.get_pages()[pagenumber - 1].layout()
+    return pdf.get_pages()[pagenumber - 1].lt_page()
 
 # def getTable(fh, page, extend_y=False, hints=[]):
 #    """placeholder for tests, refactor out"""
@@ -419,12 +419,12 @@ def multi_column_detect(page):
     return pile, projection
 
 
-def page_to_tables(page, extend_y=False, hints=[], atomise=False):
+def page_to_tables(lt_page, extend_y=False, hints=[], atomise=False):
     """
     Get a rectangular list of list of strings from one page of a document
     """
-    if not isinstance(page, LTPage):
-        raise TypeError("Page must be LTPage, not {}".format(page.__class__))
+    if not isinstance(lt_page, LTPage):
+        raise TypeError("Page must be LTPage, not {}".format(lt_page.__class__))
 
     table_array = []
 
@@ -437,7 +437,7 @@ def page_to_tables(page, extend_y=False, hints=[], atomise=False):
     else:
         flt = ['LTPage', 'LTTextLineHorizontal']
     # flt = ['LTPage', 'LTTextLineHorizontal', 'LTFigure']
-    box_list = LeafList().populate(page, flt).purge_empty_text()
+    box_list = LeafList().populate(lt_page, flt).purge_empty_text()
 
     (minx, maxx, miny, maxy) = find_table_bounding_box(box_list, hints=hints)
 

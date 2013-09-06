@@ -58,14 +58,14 @@ def plotpage(d):
     #matplotlib.pyplot.setp(ax1.get_yticklabels(),visible=False)
     ax1.yaxis.set_label_position("right")
 
-    if d.top_plot: 
+    if d.top_plot:
         axHistx = divider.append_axes("top", 1.2, pad=0.1, sharex=ax1)
         axHistx.plot(map(float,d.top_plot.keys()),map(float,d.top_plot.values()), color = 'red')
-        
+
     if d.left_plot:
         axHisty = divider.append_axes("left", 1.2, pad=0.1, sharey=ax1)
         axHisty.plot(map(float,d.left_plot.values()),map(float,d.left_plot.keys()), color = 'red')
-    
+
     if d.y_comb:
         miny = min(d.y_comb)
         maxy = max(d.y_comb)
@@ -98,7 +98,7 @@ def plothistogram(hist):
 
 def plotAllPages(fh):
     #tol = 5 # This is the tolerance for histogram rounding
-    
+
     fig_list = []
     ax1_list = []
 

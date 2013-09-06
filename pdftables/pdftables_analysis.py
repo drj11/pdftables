@@ -14,7 +14,7 @@ Analysis and visualisation library for pdftables
 
 
 import pdftables
-import matplotlib.pyplot as plt
+import matplotlib.pyplot
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from tree import Leaf, LeafList
 
@@ -102,20 +102,17 @@ def plotAllPages(fh):
     fig_list = []
     ax1_list = []
 
-    doc, interpreter, device = pdftables.initialize_pdf_miner(fh)
+    pdf = PDFDocument(fh)
+    print "Created by: %s" % pdf.get_creator()
     # print SelectedPDF
-    Creator = doc.info[0]['Creator']
-    print "Created by: %s" % Creator
     #flt = 'LTTextLineHorizontal'
     #flt = ['LTPage','LTTextLineHorizontal']
     # flt = ['LTPage','LTFigure','LTLine','LTRect','LTImage','LTTextLineHorizontal','LTCurve']
     flt = ['LTPage','LTChar']
-    for i,page in enumerate(doc.get_pages()):
+    for i, page in enumerate(doc.get_pages()):
         # page = next(doc.get_pages())
 
-        interpreter.process_page(page)
-    # receive the LTPage object for the page.
-        layout = device.get_result()
+        layout = page.layout()  # LTPage
         box_list = LeafList().populate(layout, interested = flt)
 
         ModalHeight = pdftables.calculate_modal_height(box_list)

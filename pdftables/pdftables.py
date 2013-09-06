@@ -21,11 +21,10 @@ http://denis.papathanasiou.org/2010/08/04/extracting-text-images-from-pdf-files
 import sys
 import codecs
 
-from pdfminer.pdfparser import PDFParser, PDFDocument
-from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
-from pdfminer.pdfdevice import PDFDevice
-from pdfminer.layout import LAParams, LTPage
-from pdfminer.converter import PDFPageAggregator
+from pdf_document import PDFDocument
+
+from pdfminer.layout import LTPage
+
 
 import collections
 
@@ -66,25 +65,23 @@ def get_tables(fh):
     list of rows, and a row is a list of strings.
     """
     result = []
-    doc, interpreter, device = initialize_pdf_miner(fh)
-    doc_length = len(list(doc.get_pages()))
-    for i, pdf_page in enumerate(doc.get_pages()):
+
+    pdf = PDFDocument(fh)
+
+    for i, pdf_page in enumerate(pdf.get_pages()):
+        layout = pdf_page.layout()
         #print("Trying page {}".format(i + 1))
-        if not page_contains_tables(pdf_page, interpreter, device):
+        if not page_contains_tables(layout):
             #print("Skipping page {}: no tables.".format(i + 1))
             continue
 
-        # receive the LTPage object for the page.
-        interpreter.process_page(pdf_page)
-        processed_page = device.get_result()
-
         (table, _) = page_to_tables(
-            processed_page,
+            layout,
             extend_y=True,
             hints=[],
             atomise=True)
         crop_table(table)
-        result.append(Table(table,i+1,doc_length,1,1))
+        result.append(Table(table, i + 1, len(pdf), 1, 1))
 
     return result
 
@@ -106,58 +103,22 @@ def crop_table(table):
             break
 
 
-def initialize_pdf_miner(fh):
-    # Create a PDF parser object associated with the file object.
-    parser = PDFParser(fh)
-    # Create a PDF document object that stores the document structure.
-    doc = PDFDocument()
-    # Connect the parser and document objects.
-    parser.set_document(doc)
-    doc.set_parser(parser)
-    # Supply the password for initialization.
-    # (If no password is set, give an empty string.)
-    doc.initialize("")
-    # Check if the document allows text extraction. If not, abort.
-    if not doc.is_extractable:
-        raise ValueError("PDFDocument is_extractable was False.")
-    # Create a PDF resource manager object that stores shared resources.
-    rsrcmgr = PDFResourceManager()
-    # Create a PDF device object.
-    device = PDFDevice(rsrcmgr)
-    # Create a PDF interpreter object.
-    interpreter = PDFPageInterpreter(rsrcmgr, device)
-    # Process each page contained in the document.
-    # for page in doc.get_pages():
-    #    interpreter.process_page(page)
-
-    # Set parameters for analysis.
-    laparams = LAParams()
-    laparams.word_margin = 0.0
-    # Create a PDF page aggregator object.
-    device = PDFPageAggregator(rsrcmgr, laparams=laparams)
-    interpreter = PDFPageInterpreter(rsrcmgr, device)
-    return doc, interpreter, device
-
-
 def contains_tables(fh):
     """
     contains_tables(fh) takes a file handle and returns a boolean array of the
     length of the document which is true for pages which contains tables
     """
-    doc, interpreter, device = initialize_pdf_miner(fh)
+    pdf = PDFDocument(fh)
 
-    return [page_contains_tables(p, interpreter, device) for
-            p in doc.get_pages()]
+    return [page_contains_tables(page.layout()) for page in pdf.get_pages()]
 
 
-def page_contains_tables(pdf_page, interpreter, device):
-    # TODO: hide doc, interpreter, device inside a higher level Pdf class. It's
-    # silly that we have to care about these (see function signature!!)
+def page_contains_tables(page_layout):
+    if not isinstance(page_layout, LTPage):
+        raise TypeError("Page must be LTPage, not {}".format(
+            page_layout.__class__))
 
-    interpreter.process_page(pdf_page)
-    # receive the LTPage object for the page.
-    layout = device.get_result()
-    box_list = LeafList().populate(layout)
+    box_list = LeafList().populate(page_layout)
     for item in box_list:
         assert isinstance(item, Leaf), "NOT LEAF"
     yhist = box_list.histogram(Leaf._top).rounder(1)
@@ -353,18 +314,8 @@ def project_boxes(box_list, orientation, erosion=0):
 
 
 def get_pdf_page(fh, pagenumber):
-    doc, interpreter, device = initialize_pdf_miner(fh)
-    pages = list(doc.get_pages())
-
-    try:
-        page = pages[pagenumber - 1]
-    except IndexError:
-        raise IndexError("Invalid page number")
-
-    interpreter.process_page(page)
-    # receive the LTPage object for the page.
-    processedPage = device.get_result()
-    return processedPage
+    pdf = PDFDocument(fh)
+    return pdf.get_pages()[pagenumber - 1].layout()
 
 # def getTable(fh, page, extend_y=False, hints=[]):
 #    """placeholder for tests, refactor out"""

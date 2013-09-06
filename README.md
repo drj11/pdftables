@@ -9,8 +9,8 @@ fh = open(filepath,'rb')
 ```
 Then we use our `get_pdf_page` function to selection a single page from the document:
 ```python
-pdfPage = get_pdf_page(fh, pagenumber)    
-table,diagnosticData = page_to_tables(pdfPage, extend_y = False, hints = hints, atomise = False)
+pdf_page = get_pdf_page(fh, pagenumber)    
+table,diagnosticData = page_to_tables(pdf_page, extend_y = False, hints = hints, atomise = False)
 ```
 Setting the optional `extend_y` parameter to `True` extends the grid used to extract the table to the full height of the page.
 The optional `hints` parameter is a two element string array, the first element should contain unique text at the top of the table,

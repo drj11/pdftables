@@ -514,8 +514,15 @@ def find_table_bounding_box(box_list, hints=[]):
         miny, maxy, text_line_box_list)
 
     """The table miny and maxy can be modified by hints"""
+    if hints:
+        top_string = hints[0]  # "% Change"
+        bottom_string = hints[1]  # "15.67%"
+    else:
+        top_string = None
+        bottom_string = None
+
     (miny, maxy) = adjust_y_from_hints(
-        miny, maxy, text_line_box_list, hints)
+        miny, maxy, text_line_box_list, top_string, bottom_string)
 
     """Modify table minx and maxx with hints? """
     return (minx, maxx, miny, maxy)
@@ -547,16 +554,13 @@ def adjust_y_from_thresholding(miny, minx, box_list):
     return miny, maxy
 
 
-def adjust_y_from_hints(miny, maxy, box_list, hints):
-    if hints:
-        top_string = hints[0]  # "% Change"
-        bottom_string = hints[1]  # "15.67%"
-        hintedminy, hintedmaxy = get_min_and_max_y_from_hints(
-            box_list, top_string, bottom_string)
-        if hintedminy is not None:
-            miny = hintedminy
-        if hintedmaxy is not None:
-            maxy = hintedmaxy
+def adjust_y_from_hints(miny, maxy, box_list, top_string, bottom_string):
+    (hintedminy, hintedmaxy) = get_min_and_max_y_from_hints(
+        box_list, top_string, bottom_string)
+    if hintedminy is not None:
+        miny = hintedminy
+    if hintedmaxy is not None:
+        maxy = hintedmaxy
 
     return miny, maxy
 

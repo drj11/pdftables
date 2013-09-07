@@ -499,22 +499,41 @@ def page_to_tables(pdf_page, extend_y=False, hints=[], atomise=False):
 
     return table_array, diagnostic_data
 
+
 def find_table_bounding_box(box_list, hints=[]):
     """ Returns one bounding box (minx, maxx, miny, maxy) for tables based
     on a boxlist
     """
 
+    (miny, maxy, minx, maxx) = find_simple_bounding_box(box_list)
+
+    """ Get rid of LTChar for this stage """
+    text_line_box_list = box_list.filterByType('LTTextLineHorizontal')
+
+    (miny, maxy) = adjust_y_from_thresholding(
+        miny, maxy, text_line_box_list)
+
+    """The table miny and maxy can be modified by hints"""
+    (miny, maxy) = adjust_y_from_hints(
+        miny, maxy, text_line_box_list, hints)
+
+    """Modify table minx and maxx with hints? """
+    return (minx, maxx, miny, maxy)
+
+
+def find_simple_bounding_box(box_list):
     miny = min([box.bottom for box in box_list])
     maxy = max([box.top for box in box_list])
     minx = min([box.left for box in box_list])
     maxx = max([box.right for box in box_list])
 
-    """ Get rid of LTChar for this stage """
-    textLine_boxlist = box_list.filterByType('LTTextLineHorizontal')
+    return miny, maxy, minx, maxx
 
+
+def adjust_y_from_thresholding(miny, minx, box_list):
     """ Try to reduce the y range with a threshold, wouldn't work for x"""
-    yhisttop = textLine_boxlist.histogram(Leaf._top).rounder(2)
-    yhistbottom = textLine_boxlist.histogram(Leaf._bottom).rounder(2)
+    yhisttop = box_list.histogram(Leaf._top).rounder(2)
+    yhistbottom = box_list.histogram(Leaf._bottom).rounder(2)
 
     try:
         miny = min(threshold_above(yhistbottom, IS_TABLE_COLUMN_COUNT_THRESHOLD))
@@ -525,13 +544,7 @@ def find_table_bounding_box(box_list, hints=[]):
         miny = None
         maxy = None
         #raise ValueError("table_threshold caught nothing")
-
-    """The table miny and maxy can be modified by hints"""
-    miny, maxy = adjust_y_from_hints(
-        miny, maxy, textLine_boxlist, hints)
-
-    """Modify table minx and maxx with hints? """
-    return (minx, maxx, miny, maxy)
+    return miny, maxy
 
 
 def adjust_y_from_hints(miny, maxy, box_list, hints):

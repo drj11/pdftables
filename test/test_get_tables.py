@@ -11,6 +11,7 @@ import sys
 sys.path.append('code')
 
 from pdftables import get_pdf_page, page_to_tables, TableDiagnosticData
+from pdftables.config_parameters import ConfigParameters
 
 from nose.tools import *
 
@@ -18,20 +19,25 @@ def test_it_exits_gracefully_when_no_tables_found():
     fh = open('fixtures/sample_data/13_06_12_10_36_58_boletim_ingles_junho_2013.pdf', 'rb')
     pdf_page = get_pdf_page(fh, 5)
     table, table_diagnostic_data = page_to_tables(pdf_page)
-    
+
     assert_equals([],table)
     assert(isinstance(table_diagnostic_data, TableDiagnosticData))
-                                                  
+
 def test_it_copes_with_CONAB_p8():
     fh = open('fixtures/sample_data/13_06_12_10_36_58_boletim_ingles_junho_2013.pdf', 'rb')
     pdf_page = get_pdf_page(fh, 8)
-    table, _ = page_to_tables(pdf_page, atomise=True)
-    
-    
+    table, _ = page_to_tables(pdf_page, ConfigParameters(atomise=True))
+
+
 def test_it_can_use_hints_AlmondBoard_p1():
     fh = open('fixtures/sample_data/2012.01.PosRpt.pdf', 'rb')
     pdf_page = get_pdf_page(fh, 1)
-    table, _ = page_to_tables(pdf_page, hints=[u"% Change", u"Uncommited"])
+    table, _ = page_to_tables(
+        pdf_page,
+        ConfigParameters(
+            atomise=False,
+            table_top_hint=u"% Change",
+            table_bottom_hint=u"Uncommited"))
     assert_equals(
     [[u'Salable', u'Million Lbs.', u'Kernel Wt.', u'Kernel Wt.', u'% Change'], 
      [u'1.  Carryin August 1, 2011', u'254.0', u'253,959,411', u'321,255,129', u'-20.95%'], 
@@ -53,7 +59,11 @@ def test_it_can_use_hints_AlmondBoard_p1():
 def test_it_can_use_one_hint_argentina_by_size():
     fh = open('fixtures/sample_data/argentina_diputados_voting_record.pdf', 'rb')
     pdf_page = get_pdf_page(fh, 1)
-    table1, _ = page_to_tables(pdf_page, hints=['Apellido',''])
+    table1, _ = page_to_tables(
+            pdf_page,
+            ConfigParameters(
+                atomise=False,
+                table_top_hint='Apellido'))
     #table1,_ = getTable(fh, 2)
     assert_equals(32, len(table1))
     assert_equals(4, len(table1[0]))
@@ -61,7 +71,7 @@ def test_it_can_use_one_hint_argentina_by_size():
 def test_it_returns_the_AlmondBoard_p2_table_by_size():
     fh = open('fixtures/sample_data/2012.01.PosRpt.pdf', 'rb')
     pdf_page = get_pdf_page(fh, 2)
-    table1, _ = page_to_tables(pdf_page)
+    table1, _ = page_to_tables(pdf_page, ConfigParameters(atomise=False))
     #table1, _ = getTable(fh, 2)
     assert_equals(78, len(table1))
     assert_equals(9, len(table1[0]))
@@ -69,7 +79,9 @@ def test_it_returns_the_AlmondBoard_p2_table_by_size():
 def test_the_atomise_option_works_on_coceral_p1_by_size():
     fh = open('fixtures/sample_data/1359397366Final_Coceral grain estimate_2012_December.pdf', 'rb')
     pdf_page = get_pdf_page(fh, 1)
-    table, _ = page_to_tables(pdf_page, atomise=True)
+    table, _ = page_to_tables(pdf_page,
+            ConfigParameters(
+                atomise=True))
     #table1, _ = getTable(fh, 2)
     assert_equals(43, len(table))
     assert_equals(31, len(table[0]))
@@ -84,7 +96,11 @@ def test_it_does_not_crash_on_m30_p5():
 def test_it_returns_the_AlmondBoard_p4_table():
     fh = open('fixtures/sample_data/2012.01.PosRpt.pdf', 'rb')
     pdf_page = get_pdf_page(fh, 4)
-    table, _ = page_to_tables(pdf_page, extend_y=False)
+    table, _ = page_to_tables(
+        pdf_page,
+        ConfigParameters(
+            atomise=False,
+            extend_y=False))
     assert_equals(
     [[u'Variety Name', u'Total Receipts', u'Total Receipts', u'Total Inedibles', u'Receipts', u'% Rejects'], 
      [u'Aldrich', u'48,455,454', u'49,181,261', u'405,555', u'2.53%', u'0.82%'], 

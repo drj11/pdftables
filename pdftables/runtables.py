@@ -13,6 +13,7 @@ Tell us what this does
 
 import os
 from pdftables import get_pdf_page, page_to_tables
+from pdftables.config_parameters import ConfigParameters
 from os.path import join, dirname
 import pdftables_analysis as pta
 from display import to_string, get_dimensions
@@ -21,7 +22,6 @@ from cStringIO import StringIO
 
 PDF_TEST_FILES = os.path.join(os.pardir, 'fixtures\sample_data')
 #PDF_TEST_FILES = 'fixtures\sample_data'
-hints = []
 # SelectedPDF = "cit0613.pdf"
 # pagenumber = 1 # Wierd - each word is a figure?. First page can be broken
 # down to boxes containing no text 
@@ -56,7 +56,7 @@ hints = []
 
 SelectedPDF = "2012.01.PosRpt.pdf" # 7 pages works fine in pdfminer, 4 for first test 2012.01.PosRpt.pdf
 pagenumber = 1 # Table too small to find - needs hints
-hints = [u"% Change", u"Uncommited"]
+(table_top_hint, table_bottom_hint) = (u"% Change", u"Uncommited")
 #pagenumber = 2 # Looks really nice
 #pagenumber = 3 # Looks really nice
 #pagenumber = 4 # the original!
@@ -85,7 +85,12 @@ fh = open(filepath, 'rb')
 
 pdf_page = get_pdf_page(fh, pagenumber)
 
-table, diagnosticData = page_to_tables(pdf_page, extend_y=False, hints=hints, atomise=False)
+table, diagnosticData = page_to_tables(
+    pdf_page, ConfigParameters(
+        extend_y=False,
+        table_top_hint=table_top_hint,
+        table_bottom_hint=table_bottom_hint,
+        atomise=False))
 
 fig, ax1 = pta.plotpage(diagnosticData)
 

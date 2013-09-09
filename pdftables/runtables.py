@@ -13,7 +13,7 @@ Tell us what this does
 
 import os
 from pdftables import get_pdf_page, page_to_tables
-#from pdftables.config_parameters import ConfigParameters
+from pdftables.pdf_document import PDFDocument
 from os.path import join, dirname
 import pdftables_analysis as pta
 from display import to_string, get_dimensions
@@ -80,12 +80,11 @@ pagenumber = 1 # Table too small to find - needs hints
 #pagenumber = 2
 
 filepath = os.path.join(PDF_TEST_FILES, SelectedPDF)
-fh = open(filepath, 'rb')
 pta.plotAllPages(fh)
 
 
-
-pdf_page = get_pdf_page(fh, pagenumber)
+doc = PDFDocument(open(filepath, 'rb'))
+pdf_page = doc.get_page(pagenumber)
 
 table, diagnosticData = page_to_tables(
     pdf_page, ConfigParameters(

@@ -17,6 +17,8 @@ http://denis.papathanasiou.org/2010/08/04/extracting-text-images-from-pdf-files
 # TODO Handle argentina_diputados_voting_record.pdf automatically
 # TODO Handle multiple tables on one page
 
+# TODO(pwaller/paulfurley) Specify our public interface here (and hide everything else)
+# __all__ = ["get_tables"]
 
 import sys
 import codecs
@@ -62,11 +64,18 @@ def get_tables(fh):
     Return a list of 'tables' from the given file handle, where a table is a
     list of rows, and a row is a list of strings.
     """
+    pdf = PDFDocument(fh)
+    return get_tables_from_document(pdf)
+
+def get_tables_from_document(pdf_document):
+    """
+    Return a list of 'tables' from the given PDFDocument, where a table is a
+    list of rows, and a row is a list of strings.
+    """
+
     result = []
 
-    pdf = PDFDocument(fh)
-
-    for i, pdf_page in enumerate(pdf.get_pages()):
+    for i, pdf_page in enumerate(pdf_document.get_pages()):
         #print("Trying page {}".format(i + 1))
         if not page_contains_tables(pdf_page):
             #print("Skipping page {}: no tables.".format(i + 1))
@@ -78,7 +87,7 @@ def get_tables(fh):
                 extend_y=True,
                 atomise=True))
         crop_table(table)
-        result.append(Table(table, i + 1, len(pdf), 1, 1))
+        result.append(Table(table, i + 1, len(pdf_document), 1, 1))
 
     return result
 

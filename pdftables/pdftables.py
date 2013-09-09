@@ -99,17 +99,6 @@ def crop_table(table):
         else:
             break
 
-
-def contains_tables(fh):
-    """
-    contains_tables(fh) takes a file handle and returns a boolean array of the
-    length of the document which is true for pages which contains tables
-    """
-    pdf = PDFDocument(fh)
-
-    return [page_contains_tables(page) for page in pdf.get_pages()]
-
-
 def page_contains_tables(pdf_page):
     if not isinstance(pdf_page, PDFPage):
         raise TypeError("Page must be PDFPage, not {}".format(

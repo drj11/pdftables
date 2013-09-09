@@ -12,21 +12,33 @@ sys.path.append('code')
 
 import pdftables
 
+from fixtures import fixture
+
 from nose.tools import assert_equals
+
+
+def contains_tables(fh):
+    """
+    contains_tables(fh) takes a file handle and returns a boolean array of the
+    length of the document which is true for pages which contains tables
+    """
+    pdf = pdftables.pdf_document.PDFDocument(fh)
+
+    return [pdftables.page_contains_tables(page) for page in pdf.get_pages()]
 
 
 def test_it_finds_no_tables_in_a_pdf_with_no_tables():
     fh = open('fixtures/sample_data/m27-dexpeg2-polymer.pdf', 'rb')
     assert_equals(
         [False, False, False, False, False, False, False, False],
-        pdftables.contains_tables(fh))
+        contains_tables(fh))
 
 
 def test_it_finds_tables_on_all_pages_AlmondBoard():
     fh = open('fixtures/sample_data/2012.01.PosRpt.pdf', 'rb')
     assert_equals(
         [True, True, True, True, True, True, True],
-        pdftables.contains_tables(fh))
+        contains_tables(fh))
 
 
 def test_it_finds_tables_on_some_pages_CONAB():
@@ -40,4 +52,4 @@ def test_it_finds_tables_on_some_pages_CONAB():
     TestList[19:24] = [True]*5
     TestList[25:30] = [True]*5
 
-    assert_equals(pdftables.contains_tables(fh), TestList)
+    assert_equals(contains_tables(fh), TestList)

@@ -17,6 +17,8 @@ import pdftables
 import matplotlib.pyplot
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from tree import Leaf, LeafList
+from pdf_document import PDFDocument, PDFPage
+from config_parameters import ConfigParameters
 
 
 FilterOptions = ['LTPage','LTTextBoxHorizontal','LTFigure','LTLine','LTRect','LTImage','LTTextLineHorizontal','LTCurve', 'LTChar', 'LTAnon']
@@ -107,13 +109,13 @@ def plotAllPages(fh):
     # print SelectedPDF
     #flt = 'LTTextLineHorizontal'
     #flt = ['LTPage','LTTextLineHorizontal']
-    # flt = ['LTPage','LTFigure','LTLine','LTRect','LTImage','LTTextLineHorizontal','LTCurve']
-    flt = ['LTPage','LTChar']
-    for i, page in enumerate(doc.get_pages()):
+    flt = ['LTPage','LTFigure','LTLine','LTRect','LTImage','LTTextLineHorizontal','LTCurve']
+    # flt = ['LTPage','LTChar']
+    for i, page in enumerate(pdf.get_pages()):
         # page = next(doc.get_pages())
 
-        layout = page.layout()  # LTPage
-        box_list = LeafList().populate(layout, interested = flt)
+        #layout = page.layout()  # LTPage
+        box_list = LeafList().populate(page, interested = flt)
 
         ModalHeight = pdftables.calculate_modal_height(box_list)
 

@@ -13,11 +13,13 @@ Tell us what this does
 
 import os
 from pdftables import get_pdf_page, page_to_tables
-from pdftables.config_parameters import ConfigParameters
+#from pdftables.config_parameters import ConfigParameters
 from os.path import join, dirname
 import pdftables_analysis as pta
 from display import to_string, get_dimensions
 from cStringIO import StringIO
+from pdf_document import PDFDocument, PDFPage
+from config_parameters import ConfigParameters
 
 
 PDF_TEST_FILES = os.path.join(os.pardir, 'fixtures\sample_data')
@@ -74,12 +76,12 @@ pagenumber = 1 # Table too small to find - needs hints
 #SelectedPDF = "commodity-prices_en.pdf"
 #pagenumber = 1
 
-SelectedPDF = "AnimalExampleTables.pdf" # 7 pages works fine in pdfminer, 4 for first test 2012.01.PosRpt.pdf
-pagenumber = 2
+#SelectedPDF = "AnimalExampleTables.pdf" # 7 pages works fine in pdfminer, 4 for first test 2012.01.PosRpt.pdf
+#pagenumber = 2
 
 filepath = os.path.join(PDF_TEST_FILES, SelectedPDF)
 fh = open(filepath, 'rb')
-#pta.plotAllPages(fh)
+pta.plotAllPages(fh)
 
 
 

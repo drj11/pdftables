@@ -339,6 +339,77 @@ def rounder(val, tol):
 #def filter_box_list_by_type(box_list, flt):
 #    return [box for box in box_list if box.classname in flt]
 
+
+def multi_column_detect(page):
+    #TODO This function is under construction
+    """
+    Test for multiColumns from a box_list, returns an integer number of columns
+    and a set of (left, right) pairs delineating any columns
+    """
+    # Ways to identify multicolumns:
+    # 1. High fill factor compared to tables
+    # 2. Gullies at textwidth/2, (textwidth/3, 2*textwidth/3)...
+    # 3. Histogram of boxwidths with peak at some fraction of page width
+    # This is like project_boxes but we are projecting the length of the
+    # textbox onto the axis
+    box_list = LeafList().populate(page).purge_empty_text()
+
+    box_list = filter_box_list_by_type(box_list, 'LTTextLineHorizontal')
+    pile = {}
+    vstep = 5  # should be scaled by modal row height
+    minv = rounder(
+        min([box.bottom for box in box_list]),
+        5)  # ensure some overlap
+    maxv = rounder(max([box.top for box in box_list]), 5)
+
+    minx = round(min([box.left for box in box_list]))  # ensure some overlap
+    maxx = round(max([box.right for box in box_list]))
+
+    # Initialise projection structure
+    # print minv, maxv
+
+    coords = range(int(minv), int(maxv) + vstep, vstep)
+
+    pile = collections.OrderedDict(zip(coords, [0] * len(coords)))
+    # print projection
+    for box in box_list:
+        # print int(rounder(box.midline, 30)), box.width
+        pile[int(rounder(box.midline, vstep))] += box.width
+
+    for key, value in pile.items():
+        pile[key] = value / (maxx - minx)
+
+    # Box width histogram
+    bstep = 10
+    boxhist = {}
+    boxwidthmin = rounder(min([box.width for box in box_list]), bstep)
+    boxwidthmax = rounder(max([box.width for box in box_list]), bstep)
+
+    coords = range(int(boxwidthmin), int(boxwidthmax) + bstep, bstep)
+    boxhist = collections.OrderedDict(zip(coords, [0] * len(coords)))
+    for box in box_list:
+        # print int(rounder(box.midline, 30)), box.width
+        boxhist[int(rounder(box.width, bstep))] += 1
+
+    nboxes = len(box_list)
+    for key, value in boxhist.items():
+        boxhist[key] = float(value) / float(nboxes)
+    # TODO: plt undefined
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111)
+    ax1.plot(map(float, boxhist.keys()),
+             map(float, boxhist.values()), color='red')
+    plt.show()
+
+    # This is old fashion projection
+    projection = project_boxes(box_list, 'column')
+    # process key and value
+    # print projection
+    # projection = Counter(projection)
+    # print projection
+    return pile, projection
+
+
 def page_to_tables(pdf_page, config=None):
     """
     Get a rectangular list of list of strings from one page of a document

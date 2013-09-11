@@ -17,14 +17,11 @@ import pdftables.boxes as boxes
 
 from nose.tools import assert_equals
 
+
 def test_basic_boxes():
-    leaf = boxes.Box(((11,22,33,44),"class","text"))
-    assert_equals(leaf.bbox, (11,22,33,44))
+    leaf = boxes.Box(((11, 22, 33, 44), "class", "text"))
+    assert_equals(leaf.bbox, (11, 22, 33, 44))
     assert_equals((11, 22, 33, 44), leaf.bbox)
     assert_equals(22, leaf.bottom)
     assert_equals('class', leaf.classname)
     assert_equals('text', leaf.text)
-
-def test_children():
-    x = [1, [2, [[3, 4]]]]
-    assert_equals(len(list(boxes.children(x))), 8)

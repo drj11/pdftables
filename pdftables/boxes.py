@@ -75,15 +75,6 @@ class Box(object):
         return self.centreline
 
 
-def children(obj):
-    """get all descendants of nested iterables"""
-    if isinstance(obj, collections.Iterable):
-        for child in obj:
-            for node in children(child):
-                yield node
-    yield obj
-
-
 class BoxList(list):
 
     def purge_empty_text(self):
@@ -103,14 +94,6 @@ class BoxList(list):
         for item in self:
             assert type(item) == Box, item
         return Histogram(dir_fun(box) for box in self)
-
-    # def populate(self, pdf_page, interested=['LTPage','LTChar']):
-    def populate(self, pdf_page,
-                 interested=['LTPage', 'LTTextLineHorizontal']):
-        for obj in children(pdf_page.lt_page()):
-            if not interested or obj.__class__.__name__ in interested:
-                self.append(Box(obj))
-        return self
 
     def count(self):
         return Counter(x.classname for x in self)

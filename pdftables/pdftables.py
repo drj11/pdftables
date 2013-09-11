@@ -124,11 +124,9 @@ def page_contains_tables(pdf_page):
         raise TypeError("Page must be PDFPage, not {}".format(
             pdf_page.__class__))
 
-    box_list = BoxList().populate(pdf_page)
-    for item in box_list:
-        assert isinstance(item, Box), "NOT BOX"
-    yhist = box_list.histogram(Box._top).rounder(1)
+    box_list = pdf_page.get_boxes(set((PDFPage.BoxPage, PDFPage.BoxLine)))
 
+    yhist = box_list.histogram(Box._top).rounder(1)
     test = [k for k, v in yhist.items() if v > IS_TABLE_COLUMN_COUNT_THRESHOLD]
     return len(test) > IS_TABLE_ROW_COUNT_THRESHOLD
 
@@ -385,12 +383,11 @@ def page_to_tables(pdf_page, config=None):
     columnThreshold = 5  # 3 works for smaller tables
     rowThreshold = 3
 
+    boxtypes = set((PDFPage.BoxPage, PDFPage.BoxLine))
     if config.atomise:
-        flt = ['LTPage', 'LTTextLineHorizontal', 'LTChar']
-    else:
-        flt = ['LTPage', 'LTTextLineHorizontal']
-    # flt = ['LTPage', 'LTTextLineHorizontal', 'LTFigure']
-    box_list = BoxList().populate(pdf_page, flt).purge_empty_text()
+        boxtypes.add(PDFPage.BoxGlyph)
+
+    box_list = pdf_page.get_boxes(boxtypes).purge_empty_text()
 
     (minx, maxx, miny, maxy) = find_table_bounding_box(
         box_list, config.table_top_hint, config.table_bottom_hint)

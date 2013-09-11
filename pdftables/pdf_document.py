@@ -69,8 +69,11 @@ class PDFPage(object):
         "Select bounding boxes for lines"
 
     #@abc.abstractmethod
-    def get_boxes(self, box_types=set()):
+    def get_boxes(self, box_types):
         """
-        Obtain a list of bounding boxes for objects on the page
+        Obtain a list of bounding boxes for objects on the page.
+
+        box_types can be used to specify which objects to retrieve or None
+        indicates that bounding boxes of all available types will be obtained.
         """
         raise NotImplementedError

@@ -3,6 +3,8 @@
 PDFDocument backend based on pdfminer
 """
 
+import collections
+
 import pdfminer.pdfparser
 import pdfminer.pdfinterp
 import pdfminer.pdfdevice
@@ -13,6 +15,8 @@ from .pdf_document import (
     PDFDocument as BasePDFDocument,
     PDFPage as BasePDFPage,
 )
+
+from .boxes import Box, BoxList
 
 
 class PDFDocument(BasePDFDocument):
@@ -82,11 +86,29 @@ class PDFDocument(BasePDFDocument):
         self._pages = [PDFPage(self, page) for page in self._doc.get_pages()]
 
 
+def children(obj):
+    """
+    get all descendants of nested iterables
+    """
+    if isinstance(obj, collections.Iterable):
+        for child in obj:
+            for node in children(child):
+                yield node
+    yield obj
+
+
 class PDFPage(BasePDFPage):
 
     """
     Lazy page processor.
     """
+
+    item_type_map = {
+        "LTPage": BasePDFPage.BoxPage,
+        "LTTextLineHorizontal": BasePDFPage.BoxLine,
+        # "TODO(pwaller)": BasePDFPage.BoxWord
+        "LTChar": BasePDFPage.BoxGlyph,
+    }
 
     def __init__(self, parent_pdf_document, page):
         assert isinstance(page, pdfminer.pdfparser.PDFPage), page.__class__
@@ -95,14 +117,38 @@ class PDFPage(BasePDFPage):
         self._page = page
         self._lt_page = None
 
+    def get_boxes(self, box_types):
+        """
+        Obtain a list of bounding boxes for objects on the page.
+
+        box_types can be used to specify which objects to retrieve or None
+        indicates that bounding boxes of all available types will be obtained.
+        """
+
+        items = children(self.lt_page())
+
+        if box_types is None:
+            return BoxList(Box(obj) for obj in items)
+
+        def keep(o):
+            cn = o.__class__.__name__
+            if cn in self.item_type_map:
+                return self.item_type_map[cn] in box_types
+            return False
+
+        def make_box(obj):
+            # TODO: Invert y coordinates
+            return Box(obj)
+
+        return BoxList(make_box(obj) for obj in items if keep(obj))
+
     def lt_page(self):
         if not self._lt_page:
             self._parse_page()
-
         return self._lt_page
 
     def _parse_page(self):
         self.pdf_document._interpreter.process_page(self._page)
         self._lt_page = self.pdf_document._device.get_result()
-        assert isinstance(self._lt_page,
-                          pdfminer.layout.LTPage), self._lt_page.__class__
+        assert isinstance(self._lt_page, pdfminer.layout.LTPage), (
+            self._lt_page.__class__)

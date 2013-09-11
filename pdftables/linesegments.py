@@ -23,6 +23,7 @@ segment_histogram
 from collections import defaultdict
 from heapq import heappush, heapreplace, heappop
 
+
 def segments_generator(line_segments):
     """
     Given the a list of segment ranges [(start, stop)...], yield the list of
@@ -46,25 +47,27 @@ def segments_generator(line_segments):
         if not start < end:
             raise RuntimeError("Malformed line segment input")
         heappush(queue, (start, (segment)))
-    
+
     # Process outstanding segments
     while queue:
         # Get the next segment to consider and the position at which we're
         # considering it
         position, segment = heappop(queue)
-        
+
         yield position, segment
 
         start, end = segment
         if position == start:
-            # This is the `start` of the line segment. It needs to be considered
-            # again at the `end`, so schedule it.
+            # This is the `start` of the line segment. It needs to be
+            # considered again at the `end`, so schedule it.
             heappush(queue, (end, segment))
+
 
 def histogram_segments(segments):
     """
     Given a list of histogram segments returns ((start, end), n_segments)
-    which represents a histogram projection of the number of segments onto a line.
+    which represents a histogram projection of the number of
+    segments onto a line.
 
     In [1]: list(linesegments.histogram_segments([(1, 4), (2, 3)]))
     Out[1]: [((1, 2), 1), ((2, 3), 2), ((3, 4), 1)]
@@ -93,15 +96,15 @@ def histogram_segments(segments):
 
         else:
             raise RuntimeError("Malformed input")
-        
+
         if start == end:
             # This happens if a segment appears more than once.
             # Then we don't care about considering this zero-length range.
             continue
 
-
         n_active_segments = sum(active_segments.values())
         yield (start, end), n_active_segments
+
 
 def segment_histogram(line_segments):
     """

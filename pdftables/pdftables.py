@@ -17,7 +17,8 @@ http://denis.papathanasiou.org/2010/08/04/extracting-text-images-from-pdf-files
 # TODO Handle argentina_diputados_voting_record.pdf automatically
 # TODO Handle multiple tables on one page
 
-# TODO(pwaller/paulfurley) Specify our public interface here (and hide everything else)
+# TODO(pwaller/paulfurley) Specify our public interface here
+# (and hide everything else)
 # __all__ = ["get_tables"]
 
 import sys
@@ -38,16 +39,22 @@ from counter import Counter
 IS_TABLE_COLUMN_COUNT_THRESHOLD = 3
 IS_TABLE_ROW_COUNT_THRESHOLD = 3
 
+
 class TableDiagnosticData(object):
-    def __init__(self, box_list=BoxList(), top_plot=dict(), left_plot=dict(), x_comb=[], y_comb=[]):
+
+    def __init__(self, box_list=BoxList(), top_plot=dict(), left_plot=dict(),
+                 x_comb=[], y_comb=[]):
         self.box_list = box_list
         self.top_plot = top_plot
         self.left_plot = left_plot
         self.x_comb = x_comb
         self.y_comb = y_comb
 
+
 class Table(list):
-    def __init__(self, content, page, page_total, table_index, table_index_total):
+
+    def __init__(self, content, page, page_total, table_index,
+                 table_index_total):
         super(Table, self).__init__(content)
         self.page_number = page
         self.total_pages = page_total
@@ -59,6 +66,7 @@ TOP = 3
 RIGHT = 2
 BOTTOM = 1
 
+
 def get_tables(fh):
     """
     Return a list of 'tables' from the given file handle, where a table is a
@@ -66,6 +74,7 @@ def get_tables(fh):
     """
     pdf = PDFDocument.from_fileobj(fh)
     return get_tables_from_document(pdf)
+
 
 def get_tables_from_document(pdf_document):
     """
@@ -108,6 +117,7 @@ def crop_table(table):
             table.remove(row)
         else:
             break
+
 
 def page_contains_tables(pdf_page):
     if not isinstance(pdf_page, PDFPage):
@@ -182,10 +192,10 @@ def comb_from_projection(projection, threshold, orientation):
     onto either the y axis (for rows) or the x-axis (for columns). These
     boundaries are known as the comb
     """
-    if orientation=="row":
-        tol=1
-    elif orientation=="column":
-        tol=3
+    if orientation == "row":
+        tol = 1
+    elif orientation == "column":
+        tol = 3
 
     projection_threshold = threshold_above(projection, threshold)
 
@@ -211,13 +221,13 @@ def comb_from_projection(projection, threshold, orientation):
     lowers.append(projection_threshold[0])
     for i in range(1, len(projection_threshold)):
         if projection_threshold[i] > (
-                projection_threshold[i-1] + 1):
+                projection_threshold[i - 1] + 1):
             uppers.append(projection_threshold[i - 1])
             lowers.append(projection_threshold[i])
     uppers.append(projection_threshold[-1])
 
     comb = comb_from_uppers_and_lowers(uppers, lowers, tol=tol,
-                                       projection = projection)
+                                       projection=projection)
     comb.reverse()
 
     return comb
@@ -238,7 +248,7 @@ def comb_from_uppers_and_lowers(uppers, lowers, tol=1, projection=dict()):
     comb = []
     comb.append(uppers[0])
     for i in range(1, len(uppers)):
-        if (lowers[i - 1]-uppers[i])>tol:
+        if (lowers[i - 1] - uppers[i]) > tol:
             comb.append(find_minima(lowers[i - 1], uppers[i], projection))
             #comb.append(find_minima(lowers[i - 1], uppers[i]))
 
@@ -246,15 +256,16 @@ def comb_from_uppers_and_lowers(uppers, lowers, tol=1, projection=dict()):
 
     return comb
 
+
 def find_minima(lower, upper, projection=dict()):
 
-    #print lower, upper, projection
-    if len(projection)==0:
+    # print lower, upper, projection
+    if len(projection) == 0:
         idx = (lower + upper) / 2.0
     else:
         profile = []
         for i in range(upper, lower):
-            #print projection[i]
+            # print projection[i]
             profile.append(projection[i])
 
         val, idx = min((val, idx) for (idx, val) in enumerate(profile))
@@ -262,6 +273,7 @@ def find_minima(lower, upper, projection=dict()):
         idx = upper + idx
 
     return idx
+
 
 def comb_extend(comb, minv, maxv):
     """
@@ -354,7 +366,7 @@ def rounder(val, tol):
     return round((1.0 * val) / tol) * tol
 
 
-#def filter_box_list_by_type(box_list, flt):
+# def filter_box_list_by_type(box_list, flt):
 #    return [box for box in box_list if box.classname in flt]
 
 def page_to_tables(pdf_page, config=None):
@@ -362,7 +374,8 @@ def page_to_tables(pdf_page, config=None):
     Get a rectangular list of list of strings from one page of a document
     """
     if not isinstance(pdf_page, PDFPage):
-        raise TypeError("Page must be PDFPage, not {}".format(pdf_page.__class__))
+        raise TypeError(
+            "Page must be PDFPage, not {}".format(pdf_page.__class__))
 
     if not config:
         config = ConfigParameters()
@@ -384,8 +397,8 @@ def page_to_tables(pdf_page, config=None):
 
     """If miny and maxy are None then we found no tables and should exit"""
     if miny is None and maxy is None:
-       print "found no tables"
-       return table_array, TableDiagnosticData()
+        print "found no tables"
+        return table_array, TableDiagnosticData()
 
     if config.atomise:
         box_list = box_list.filterByType(['LTPage', 'LTChar'])
@@ -436,7 +449,7 @@ def page_to_tables(pdf_page, config=None):
     if config.atomise:
         tmp_table = []
         for row in table_array:
-            stripped_row = map(unicode.strip,row)
+            stripped_row = map(unicode.strip, row)
             tmp_table.append(stripped_row)
         table_array = tmp_table
 
@@ -489,7 +502,8 @@ def adjust_y_from_thresholding(miny, minx, box_list):
     yhistbottom = box_list.histogram(Box._bottom).rounder(2)
 
     try:
-        miny = min(threshold_above(yhistbottom, IS_TABLE_COLUMN_COUNT_THRESHOLD))
+        miny = min(
+            threshold_above(yhistbottom, IS_TABLE_COLUMN_COUNT_THRESHOLD))
         # and the top of the top cell
         maxy = max(threshold_above(yhisttop, IS_TABLE_COLUMN_COUNT_THRESHOLD))
     except ValueError:
@@ -497,7 +511,7 @@ def adjust_y_from_thresholding(miny, minx, box_list):
         miny = None
         maxy = None
         #raise ValueError("table_threshold caught nothing")
-        
+
     return miny, maxy
 
 
@@ -515,7 +529,7 @@ def adjust_y_from_hints(miny, maxy, box_list, top_string, bottom_string):
 
 
 def filter_box_list_by_position(box_list, minv, maxv, dir_fun):
-    #TODO This should be in tree.py
+    # TODO This should be in tree.py
     filtered_box_list = BoxList()
     # print minv, maxv, index
     for box in box_list:

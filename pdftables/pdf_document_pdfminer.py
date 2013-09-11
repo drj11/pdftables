@@ -14,7 +14,9 @@ from .pdf_document import (
     PDFPage as BasePDFPage,
 )
 
+
 class PDFDocument(BasePDFDocument):
+
     """
     Wrapper to abstract away underlying PDF class. This is partly to simplify
     the concepts in the rest of the code to just the ones we need. And partly
@@ -74,13 +76,14 @@ class PDFDocument(BasePDFDocument):
         if 1 <= page_number <= len(pages):
             return pages[page_number - 1]
         raise IndexError("Invalid page. Reminder: get_page() is 1-indexed "
-            "(there are {0} pages)!".format(len(pages)))
+                         "(there are {0} pages)!".format(len(pages)))
 
     def _construct_pages(self):
         self._pages = [PDFPage(self, page) for page in self._doc.get_pages()]
 
 
 class PDFPage(BasePDFPage):
+
     """
     Lazy page processor.
     """

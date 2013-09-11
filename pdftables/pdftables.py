@@ -28,7 +28,7 @@ from config_parameters import ConfigParameters
 
 import collections
 
-from boxes import Leaf, LeafList
+from boxes import Box, BoxList
 import requests  # TODO: remove this dependency
 from cStringIO import StringIO
 import math
@@ -39,7 +39,7 @@ IS_TABLE_COLUMN_COUNT_THRESHOLD = 3
 IS_TABLE_ROW_COUNT_THRESHOLD = 3
 
 class TableDiagnosticData(object):
-    def __init__(self, box_list=LeafList(), top_plot=dict(), left_plot=dict(), x_comb=[], y_comb=[]):
+    def __init__(self, box_list=BoxList(), top_plot=dict(), left_plot=dict(), x_comb=[], y_comb=[]):
         self.box_list = box_list
         self.top_plot = top_plot
         self.left_plot = left_plot
@@ -114,10 +114,10 @@ def page_contains_tables(pdf_page):
         raise TypeError("Page must be PDFPage, not {}".format(
             pdf_page.__class__))
 
-    box_list = LeafList().populate(pdf_page)
+    box_list = BoxList().populate(pdf_page)
     for item in box_list:
-        assert isinstance(item, Leaf), "NOT LEAF"
-    yhist = box_list.histogram(Leaf._top).rounder(1)
+        assert isinstance(item, Box), "NOT BOX"
+    yhist = box_list.histogram(Box._top).rounder(1)
 
     test = [k for k, v in yhist.items() if v > IS_TABLE_COLUMN_COUNT_THRESHOLD]
     return len(test) > IS_TABLE_ROW_COUNT_THRESHOLD
@@ -377,7 +377,7 @@ def page_to_tables(pdf_page, config=None):
     else:
         flt = ['LTPage', 'LTTextLineHorizontal']
     # flt = ['LTPage', 'LTTextLineHorizontal', 'LTFigure']
-    box_list = LeafList().populate(pdf_page, flt).purge_empty_text()
+    box_list = BoxList().populate(pdf_page, flt).purge_empty_text()
 
     (minx, maxx, miny, maxy) = find_table_bounding_box(
         box_list, config.table_top_hint, config.table_bottom_hint)
@@ -394,13 +394,13 @@ def page_to_tables(pdf_page, config=None):
         box_list,
         miny,
         maxy,
-        Leaf._midline)
+        Box._midline)
 
     filtered_box_list = filter_box_list_by_position(
         filtered_box_list,
         minx,
         maxx,
-        Leaf._centreline)
+        Box._centreline)
 
     # Project boxes onto horizontal axis
     column_projection = project_boxes(filtered_box_list, "column")
@@ -485,8 +485,8 @@ def adjust_y_from_thresholding(miny, minx, box_list):
     Try to reduce the y range with a threshold, wouldn't work for x
     """
 
-    yhisttop = box_list.histogram(Leaf._top).rounder(2)
-    yhistbottom = box_list.histogram(Leaf._bottom).rounder(2)
+    yhisttop = box_list.histogram(Box._top).rounder(2)
+    yhistbottom = box_list.histogram(Box._bottom).rounder(2)
 
     try:
         miny = min(threshold_above(yhistbottom, IS_TABLE_COLUMN_COUNT_THRESHOLD))
@@ -516,7 +516,7 @@ def adjust_y_from_hints(miny, maxy, box_list, top_string, bottom_string):
 
 def filter_box_list_by_position(box_list, minv, maxv, dir_fun):
     #TODO This should be in tree.py
-    filtered_box_list = LeafList()
+    filtered_box_list = BoxList()
     # print minv, maxv, index
     for box in box_list:
         # box = boxstruct[0]

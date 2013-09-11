@@ -1,12 +1,11 @@
-#!/usr/bin/env python
+"""
+Describe box-like data (such as glyphs and rects) in a PDF and helper functions
+"""
 # ScraperWiki Limited
 # Ian Hopkinson, 2013-06-19
 # -*- coding: utf-8 -*-
 
 from __future__ import unicode_literals
-"""
-tree classes which hold the parsed PDF document data
-"""
 
 import collections
 from counter import Counter
@@ -24,7 +23,7 @@ class Histogram(Counter):
             c = c + Histogram({_rounder(item, tol): self[item]})
         return c
 
-class Leaf(object):
+class Box(object):
     def __init__(self, obj):
         if type(obj)==tuple:
             (self.bbox, self.classname, self.text) = obj
@@ -46,7 +45,7 @@ class Leaf(object):
 
     def __getitem__(self, i):
         """backwards-compatibility helper, don't use it!"""
-        error = ("DEPRECATED: don't use leaf[x] - use these instead: "
+        error = ("DEPRECATED: don't use box[x] - use these instead: "
                  "[0]: bbox, [1]: classname, [2]: text")
         raise RuntimeError(error)
 
@@ -78,29 +77,29 @@ def children(obj):
                 yield node
     yield obj
 
-class LeafList(list):
+class BoxList(list):
     def purge_empty_text(self):
         # TODO: BUG: we remove characters without adjusting the width / coords
         #       which is kind of invalid.
 
-        return LeafList(box for box in self if box.text.strip()
+        return BoxList(box for box in self if box.text.strip()
                             or box.classname != 'LTTextLineHorizontal')
 
     def filterByType(self, flt=None):
         if not flt: return self
-        return LeafList(box for box in self if box.classname in flt)
+        return BoxList(box for box in self if box.classname in flt)
 
     def histogram(self, dir_fun):
         # index 0 = left, 1 = top, 2 = right, 3 = bottom
         for item in self:
-            assert type(item)==Leaf, item
+            assert type(item)==Box, item
         return Histogram(dir_fun(box) for box in self)
 
     def populate(self, pdf_page, interested=['LTPage','LTTextLineHorizontal']):
     # def populate(self, pdf_page, interested=['LTPage','LTChar']):
         for obj in children(pdf_page.lt_page()):
             if not interested or obj.__class__.__name__ in interested:
-                self.append(Leaf(obj))
+                self.append(Box(obj))
         return self
 
     def count(self):

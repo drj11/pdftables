@@ -15,10 +15,10 @@ import pdftables.boxes as boxes
 #from boxes import Leaf, LeafList
 #import boxes
 
-from nose.tools import *
+from nose.tools import assert_equals
 
 def test_basic_boxes():
-    leaf = boxes.Leaf(((11,22,33,44),"class","text"))
+    leaf = boxes.Box(((11,22,33,44),"class","text"))
     assert_equals(leaf.bbox, (11,22,33,44))
     assert_equals((11, 22, 33, 44), leaf.bbox)
     assert_equals(22, leaf.bottom)

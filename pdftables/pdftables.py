@@ -64,7 +64,7 @@ def get_tables(fh):
     Return a list of 'tables' from the given file handle, where a table is a
     list of rows, and a row is a list of strings.
     """
-    pdf = PDFDocument(fh)
+    pdf = PDFDocument.from_fileobj(fh)
     return get_tables_from_document(pdf)
 
 def get_tables_from_document(pdf_document):
@@ -329,7 +329,7 @@ def project_boxes(box_list, orientation, erosion=0):
 
 
 def get_pdf_page(fh, pagenumber):
-    pdf = PDFDocument(fh)
+    pdf = PDFDocument.from_fileobj(fh)
     return pdf.get_pages()[pagenumber - 1]
 
 

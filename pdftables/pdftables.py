@@ -102,6 +102,7 @@ def crop_table(table):
         else:
             break
 
+    # TODO(pwaller): wtf?
     for row in list(reversed(table)):  # bottom -> top
         if not any(cell.strip() for cell in row):
             table.remove(row)
@@ -197,6 +198,16 @@ def comb_from_projection(projection, threshold, orientation):
     uppers = []
     lowers = []
 
+    # TODO(pwaller): Use a more readable algorithm, determine purpose, maybe
+    #                refactor or use more general approach.
+    #
+    # What is the + 1 for? Why?
+    #
+    # for this, next in zip(a, a[1:])
+    #     if this + 1 < next:
+    #         uppers.append(this)
+    #         lowers.append(next)
+
     lowers.append(projection_threshold[0])
     for i in range(1, len(projection_threshold)):
         if projection_threshold[i] > (
@@ -213,9 +224,12 @@ def comb_from_projection(projection, threshold, orientation):
 
 
 def comb_from_uppers_and_lowers(uppers, lowers, tol=1, projection=dict()):
-    """Called by comb_from_projection to calculate the comb given a set of
+    """
+    Called by comb_from_projection to calculate the comb given a set of
     uppers and lowers, which are upper and lower edges of the thresholded
-    projection"""
+    projection
+    """
+
     # tol is a tolerance to remove very small minima, increasing to 2 fowls up
     # row separation
     assert len(uppers) == len(lowers)
@@ -250,7 +264,9 @@ def find_minima(lower, upper, projection=dict()):
     return idx
 
 def comb_extend(comb, minv, maxv):
-    """Extend the comb to minv and maxv"""
+    """
+    Extend the comb to minv and maxv
+    """
     # TODO should this truncate if minv>minc or maxc>maxc
     # print y_comb
     # Find sort order of comb, convert to ascending
@@ -258,16 +274,20 @@ def comb_extend(comb, minv, maxv):
     if comb[0] > comb[-1]:
         comb.reverse()
         reversed = True
+
     # Find min and max of comb
     minc = comb[0]
     maxc = comb[-1]
+
     # Get average row spacing
     rowSpacing = numpy_subset.average(numpy_subset.diff(comb))
+
     # Extend minimum
     if minv < minc:
         comb.reverse()
         comb.extend(list(numpy_subset.arange(minc, minv, -rowSpacing))[1:])
         comb.reverse()
+
     # Extend maximum
     if maxv > maxc:
         comb.extend(list(numpy_subset.arange(maxc, maxv, rowSpacing))[1:])
@@ -437,18 +457,17 @@ def find_table_bounding_box(box_list, table_top_hint, table_bottom_hint):
 
     (miny, maxy, minx, maxx) = find_simple_bounding_box(box_list)
 
-    """ Get rid of LTChar for this stage """
+    # Get rid of LTChar for this stage
     text_line_box_list = box_list.filterByType('LTTextLineHorizontal')
 
     (miny, maxy) = adjust_y_from_thresholding(
         miny, maxy, text_line_box_list)
 
-    """The table miny and maxy can be modified by hints"""
-
+    # The table miny and maxy can be modified by hints
     (miny, maxy) = adjust_y_from_hints(
         miny, maxy, text_line_box_list, table_top_hint, table_bottom_hint)
 
-    """Modify table minx and maxx with hints? """
+    # Modify table minx and maxx with hints?
     return (minx, maxx, miny, maxy)
 
 
@@ -462,25 +481,31 @@ def find_simple_bounding_box(box_list):
 
 
 def adjust_y_from_thresholding(miny, minx, box_list):
-    """ Try to reduce the y range with a threshold, wouldn't work for x"""
+    """
+    Try to reduce the y range with a threshold, wouldn't work for x
+    """
+
     yhisttop = box_list.histogram(Leaf._top).rounder(2)
     yhistbottom = box_list.histogram(Leaf._bottom).rounder(2)
 
     try:
         miny = min(threshold_above(yhistbottom, IS_TABLE_COLUMN_COUNT_THRESHOLD))
-    # and the top of the top cell
+        # and the top of the top cell
         maxy = max(threshold_above(yhisttop, IS_TABLE_COLUMN_COUNT_THRESHOLD))
     except ValueError:
         # Value errors raised when min and/or max fed empty lists
         miny = None
         maxy = None
         #raise ValueError("table_threshold caught nothing")
+        
     return miny, maxy
 
 
 def adjust_y_from_hints(miny, maxy, box_list, top_string, bottom_string):
+
     (hintedminy, hintedmaxy) = get_min_and_max_y_from_hints(
         box_list, top_string, bottom_string)
+
     if hintedminy is not None:
         miny = hintedminy
     if hintedmaxy is not None:

@@ -13,11 +13,12 @@ sys.path.append('code')
 import pdftables
 from pdftables.config_parameters import ConfigParameters
 
+from fixtures import fixture
+
 from nose.tools import assert_equals
 
 def test_atomise_does_not_disrupt_table_finding():
-    fh = open('fixtures/sample_data/13_06_12_10_36_58_boletim_ingles_junho_2013.pdf', 'rb')
-    pdf_page = pdftables.get_pdf_page(fh, 4)
+    pdf_page = fixture("13_06_12_10_36_58_boletim_ingles_junho_2013.pdf").get_page(4)
     table1, _ = pdftables.page_to_tables(
             pdf_page,
             ConfigParameters(

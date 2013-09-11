@@ -10,28 +10,26 @@ getTablesTests
 import sys
 sys.path.append('code')
 
-from pdftables import get_pdf_page, page_to_tables, TableDiagnosticData
+from pdftables import page_to_tables, TableDiagnosticData
 from pdftables.config_parameters import ConfigParameters
+
+from fixtures import fixture
 
 from nose.tools import *
 
 def test_it_exits_gracefully_when_no_tables_found():
-    fh = open('fixtures/sample_data/13_06_12_10_36_58_boletim_ingles_junho_2013.pdf', 'rb')
-    pdf_page = get_pdf_page(fh, 5)
+    pdf_page = fixture("13_06_12_10_36_58_boletim_ingles_junho_2013.pdf").get_page(5)
     table, table_diagnostic_data = page_to_tables(pdf_page)
 
     assert_equals([],table)
     assert(isinstance(table_diagnostic_data, TableDiagnosticData))
 
 def test_it_copes_with_CONAB_p8():
-    fh = open('fixtures/sample_data/13_06_12_10_36_58_boletim_ingles_junho_2013.pdf', 'rb')
-    pdf_page = get_pdf_page(fh, 8)
+    pdf_page = fixture("13_06_12_10_36_58_boletim_ingles_junho_2013.pdf").get_page(8)
     table, _ = page_to_tables(pdf_page, ConfigParameters(atomise=True))
 
-
 def test_it_can_use_hints_AlmondBoard_p1():
-    fh = open('fixtures/sample_data/2012.01.PosRpt.pdf', 'rb')
-    pdf_page = get_pdf_page(fh, 1)
+    pdf_page = fixture("2012.01.PosRpt.pdf").get_page(1)
     table, _ = page_to_tables(
         pdf_page,
         ConfigParameters(
@@ -57,8 +55,7 @@ def test_it_can_use_hints_AlmondBoard_p1():
     , table)
 
 def test_it_can_use_one_hint_argentina_by_size():
-    fh = open('fixtures/sample_data/argentina_diputados_voting_record.pdf', 'rb')
-    pdf_page = get_pdf_page(fh, 1)
+    pdf_page = fixture("argentina_diputados_voting_record.pdf").get_page(1)
     table1, _ = page_to_tables(
             pdf_page,
             ConfigParameters(
@@ -69,16 +66,14 @@ def test_it_can_use_one_hint_argentina_by_size():
     assert_equals(4, len(table1[0]))
 
 def test_it_returns_the_AlmondBoard_p2_table_by_size():
-    fh = open('fixtures/sample_data/2012.01.PosRpt.pdf', 'rb')
-    pdf_page = get_pdf_page(fh, 2)
+    pdf_page = fixture("2012.01.PosRpt.pdf").get_page(2)
     table1, _ = page_to_tables(pdf_page, ConfigParameters(atomise=False))
     #table1, _ = getTable(fh, 2)
     assert_equals(78, len(table1))
     assert_equals(9, len(table1[0]))
 
 def test_the_atomise_option_works_on_coceral_p1_by_size():
-    fh = open('fixtures/sample_data/1359397366Final_Coceral grain estimate_2012_December.pdf', 'rb')
-    pdf_page = get_pdf_page(fh, 1)
+    pdf_page = fixture("1359397366Final_Coceral grain estimate_2012_December.pdf").get_page(1)
     table, _ = page_to_tables(pdf_page,
             ConfigParameters(
                 atomise=True))
@@ -87,15 +82,13 @@ def test_the_atomise_option_works_on_coceral_p1_by_size():
     assert_equals(31, len(table[0]))
 
 def test_it_does_not_crash_on_m30_p5():
-    fh = open('fixtures/sample_data/m30-JDent36s15-20.pdf', 'rb')
-    pdf_page = get_pdf_page(fh, 5)
+    pdf_page = fixture("m30-JDent36s15-20.pdf").get_page(5)
     table, _ = page_to_tables(pdf_page)
     """Put this in for more aggressive test"""
     #assert_equals([u'5\n', u'0.75\n', u'0.84\n', u'0.92\n', u'0.94\n', u'evaluation of a novel liquid whitening gel containing 18%\n'],
     #              table[4])
 def test_it_returns_the_AlmondBoard_p4_table():
-    fh = open('fixtures/sample_data/2012.01.PosRpt.pdf', 'rb')
-    pdf_page = get_pdf_page(fh, 4)
+    pdf_page = fixture("2012.01.PosRpt.pdf").get_page(4)
     table, _ = page_to_tables(
         pdf_page,
         ConfigParameters(

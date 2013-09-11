@@ -9,6 +9,8 @@ import os
 from pdftables import get_tables
 from pdftables.display import to_string
 
+from fixtures import fixture
+
 SAMPLE_DIR = join(dirname(__file__), '..', 'fixtures', 'sample_data')
 EXPECTED_DIR = join(dirname(__file__), '..', 'fixtures', 'expected_output')
 ACTUAL_DIR = join(dirname(__file__), '..', 'fixtures', 'actual_output')
@@ -20,8 +22,7 @@ def _test_sample_data():
 
 
 def _test_sample_pdf(short_filename):
-    with open(join(SAMPLE_DIR, short_filename),'rb') as f:
-        tables = get_tables(f)
+    tables = get_tables_from_document(fixture(short_filename))
 
     assert_equal(get_expected_number_of_tables(short_filename), len(tables))
     for table_num, table in enumerate(tables):

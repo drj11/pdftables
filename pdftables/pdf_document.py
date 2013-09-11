@@ -59,6 +59,16 @@ class PDFDocument(object):
 
         return self._pages
 
+    def get_page(self, page_number):
+        """
+        1-based page getter
+        """
+        pages = self.get_pages()
+        if 1 <= page_number <= len(pages):
+            return pages[page_number - 1]
+        raise IndexError("Invalid page. Reminder: get_page() is 1-indexed "
+            "(there are {0} pages)!".format(len(pages)))
+
     def _construct_pages(self):
         self._pages = [PDFPage(self, page) for page in self._doc.get_pages()]
 

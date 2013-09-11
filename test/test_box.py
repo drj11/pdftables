@@ -4,20 +4,21 @@
 # -*- coding: utf-8 -*-
 
 """
-tree Tests
+boxes Tests
 """
 
 import sys
 sys.path.append('pdftables')
 
 import pdftables
-#from tree import Leaf, LeafList
-#import tree
+import pdftables.boxes as boxes
+#from boxes import Leaf, LeafList
+#import boxes
 
 from nose.tools import *
 
-def test_basic_tree():
-    leaf = pdftables.tree.Leaf(((11,22,33,44),"class","text"))
+def test_basic_boxes():
+    leaf = boxes.Leaf(((11,22,33,44),"class","text"))
     assert_equals(leaf.bbox, (11,22,33,44))
     assert_equals((11, 22, 33, 44), leaf.bbox)
     assert_equals(22, leaf.bottom)
@@ -26,4 +27,4 @@ def test_basic_tree():
 
 def test_children():
     x = [1, [2, [[3, 4]]]]
-    assert_equals(len(list(pdftables.tree.children(x))), 8)
+    assert_equals(len(list(boxes.children(x))), 8)

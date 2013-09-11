@@ -28,7 +28,7 @@ from config_parameters import ConfigParameters
 
 import collections
 
-from tree import Leaf, LeafList
+from boxes import Leaf, LeafList
 import requests  # TODO: remove this dependency
 from cStringIO import StringIO
 import math

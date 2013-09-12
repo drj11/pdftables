@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""pdftables-dump: obtain pdftables debugging information from pdfs
+"""pdftables-render: obtain pdftables debugging information from pdfs
 
 Usage:
     pdftables-render [options] [--] (<pdfpath>[:page])...
@@ -28,7 +28,7 @@ from pdftables.pdftables import page_to_tables
 
 
 def main():
-    arguments = docopt(__doc__, version='pdftables-dump experimental')
+    arguments = docopt(__doc__, version='pdftables-render experimental')
 
     if arguments["--debug"]:
         print(arguments)
@@ -37,20 +37,24 @@ def main():
         return check(arguments["<pdfpath>"][0])
 
     for pdf_filename in arguments["<pdfpath>"]:
-        with open(pdf_filename, "rb") as fd:
+        render_pdf(pdf_filename)
 
-            doc = PDFDocument.from_fileobj(fd)
-            print doc
-            for page_number, page in enumerate(doc.get_pages()):
-                svg_file = 'svgs/{0}_{1}.svg'.format(
-                    basename(pdf_filename), page_number)
-                png_file = 'pngs/{0}_{1}.png'.format(
-                    basename(pdf_filename), page_number)
-                table_container = page_to_tables(page)
-                annotations = make_annotations(table_container)
 
-                render_page(
-                    pdf_filename, page_number, annotations, svg_file, png_file)
+def render_pdf(pdf_filename):
+    with open(pdf_filename, "rb") as fd:
+
+        doc = PDFDocument.from_fileobj(fd)
+        print doc
+        for page_number, page in enumerate(doc.get_pages()):
+            svg_file = 'svgs/{0}_{1}.svg'.format(
+                basename(pdf_filename), page_number)
+            png_file = 'pngs/{0}_{1}.png'.format(
+                basename(pdf_filename), page_number)
+            table_container = page_to_tables(page)
+            annotations = make_annotations(table_container)
+
+            render_page(
+                pdf_filename, page_number, annotations, svg_file, png_file)
 
 def check(path):
     fileobj = open(path, 'rb')

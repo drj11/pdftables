@@ -5,7 +5,7 @@ from collections import namedtuple
 import patched_poppler as poppler
 import cairo
 
-from os.path import abspath
+from os.path import abspath, basename
 
 Point = namedtuple('Point', ['x', 'y'])
 Line = namedtuple('Line', ['start', 'end'])
@@ -43,8 +43,9 @@ RENDERERS[Rectangle] = draw_rectangle
 
 
 class CairoPdfPageRenderer(object):
-    def __init__(self, pdf_page, svg_filename):
+    def __init__(self, pdf_page, svg_filename, png_filename):
         self._svg_filename = abspath(svg_filename)
+        self._png_filename = abspath(png_filename) if png_filename else None
         self._context, self._surface = self._get_context(
             svg_filename, *pdf_page.get_size())
 
@@ -74,20 +75,24 @@ class CairoPdfPageRenderer(object):
         RENDERERS[type(shape)](self._context, shape)
 
     def flush(self):
-        #        self._surface.write_to_png("pngs/page-{0:02d}.png".format(i))
+        if self._png_filename is not None:
+            self._surface.write_to_png(self._png_filename)
 
         self._surface.flush()
         self._surface.finish()
 
 
-def render_annotated_pdf_page(pdf_filename, page_number, annotations):
+def render_annotated_pdf_page(pdf_filename, page_number,
+                              annotations, svg_file=None,
+                              png_file=None):
     """
     Render a single page of a pdf with graphical annotations added.
 
 
     """
     page = extract_pdf_page(pdf_filename, page_number)
-    renderer = CairoPdfPageRenderer(page, 'svgs/page_0.svg')
+
+    renderer = CairoPdfPageRenderer(page, svg_file, png_file)
 
     for annotation in annotations:
         for shape in annotation.shapes:

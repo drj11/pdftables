@@ -119,24 +119,15 @@ class PDFPage(BasePDFPage):
         x0, y0, x1, y1 = self._page.mediabox
         return x1 - x0, y1 - y0
 
-    def get_boxes(self, box_types):
+    def get_glyphs(self):
         """
-        Obtain a list of bounding boxes for objects on the page.
-
-        box_types can be used to specify which objects to retrieve or None
-        indicates that bounding boxes of all available types will be obtained.
+        Return a BoxList of the glyphs on this page.
         """
 
         items = children(self.lt_page())
 
-        if box_types is None:
-            return BoxList(Box(obj) for obj in items)
-
         def keep(o):
-            cn = o.__class__.__name__
-            if cn in self.item_type_map:
-                return self.item_type_map[cn] in box_types
-            return False
+            return isinstance(o, pdfminer.layout.LTChar)
 
         def make_box(obj):
             # TODO: Invert y coordinates

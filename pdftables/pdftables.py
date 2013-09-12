@@ -30,7 +30,6 @@ from config_parameters import ConfigParameters
 import collections
 
 from boxes import Box, BoxList
-import requests  # TODO: remove this dependency
 from cStringIO import StringIO
 import math
 import numpy_subset
@@ -38,17 +37,6 @@ from counter import Counter
 
 IS_TABLE_COLUMN_COUNT_THRESHOLD = 3
 IS_TABLE_ROW_COUNT_THRESHOLD = 3
-
-
-class TableDiagnosticData(object):
-
-    def __init__(self, box_list=BoxList(), top_plot=dict(), left_plot=dict(),
-                 x_comb=[], y_comb=[]):
-        self.box_list = box_list
-        self.top_plot = top_plot
-        self.left_plot = left_plot
-        self.x_comb = x_comb
-        self.y_comb = y_comb
 
 
 class Table(list):
@@ -298,6 +286,7 @@ def comb_extend(comb, minv, maxv):
         comb.extend(list(numpy_subset.arange(minc, minv, -rowSpacing))[1:])
         comb.reverse()
 
+
     # Extend maximum
     if maxv > maxc:
         comb.extend(list(numpy_subset.arange(maxc, maxv, rowSpacing))[1:])
@@ -343,19 +332,6 @@ def get_pdf_page(fh, pagenumber):
     return pdf.get_pages()[pagenumber - 1]
 
 
-def get_min_and_max_y_from_hints(box_list, top_string, bottom_string):
-    miny = None
-    maxy = None
-    if top_string:
-        top_box = [box for box in box_list if top_string in box.text]
-        if top_box:
-            maxy = top_box[0].top
-    if bottom_string:
-        bottomBox = [box for box in box_list if bottom_string in box.text]
-        if bottomBox:
-            miny = bottomBox[0].bottom
-    return miny, maxy
-
 
 def rounder(val, tol):
     """
@@ -363,167 +339,155 @@ def rounder(val, tol):
     """
     return round((1.0 * val) / tol) * tol
 
+class Table(object):
+    """
+    Represents a single table on a PDF page.
+    """
 
-# def filter_box_list_by_type(box_list, flt):
-#    return [box for box in box_list if box.classname in flt]
+class TableContainer(object):
+    """
+    Represents a collection of tables on a PDF page.
+    """
+
+    def __repr__(self):
+        return "TableContainer(" + repr(self.__dict__) + ")"
 
 def page_to_tables(pdf_page, config=None):
     """
     Get a rectangular list of list of strings from one page of a document
     """
-    if not isinstance(pdf_page, PDFPage):
-        raise TypeError(
-            "Page must be PDFPage, not {}".format(pdf_page.__class__))
 
-    if not config:
+    # Avoid local variables; instead use properties of the
+    # `tables` object, so that they are exposed for debugging and
+    # visualisation.
+
+    tables = TableContainer()
+
+    if config is None:
         config = ConfigParameters()
-    table_array = []
 
-    # For LTTextLine horizontal column and row thresholds of 3 work ok
-    columnThreshold = 5  # 3 works for smaller tables
-    rowThreshold = 3
+    tables.bounding_boxes = find_bounding_boxes(pdf_page, config)
 
-    boxtypes = set((PDFPage.BoxPage, PDFPage.BoxLine))
-    if config.atomise:
-        boxtypes.add(PDFPage.BoxGlyph)
+    tables.all_glyphs = pdf_page.get_glyphs()
 
-    box_list = pdf_page.get_boxes(boxtypes).purge_empty_text()
+    for box in tables.bounding_boxes:
+        table = Table()
+        table.glyphs = tables.all_glyphs.inside(box)
+        edges = compute_edges(table.glyphs, box)
+        table.row_edges, table.column_edges = edges
+        table.data = compute_table_data(table)
+        tables.add(table)
+        
+    return tables
 
-    (minx, maxx, miny, maxy) = find_table_bounding_box(
+
+def find_bounding_boxes(pdf_page, config):
+    """Returns a list of bounding boxes."""
+
+    box_list = pdf_page.get_glyphs().purge_empty_text()
+    bbox = find_table_bounding_box(
         box_list, config.table_top_hint, config.table_bottom_hint)
 
-    """If miny and maxy are None then we found no tables and should exit"""
-    if miny is None and maxy is None:
-        print "found no tables"
-        return table_array, TableDiagnosticData()
+    if bbox is Box.empty_box:
+        return []
 
-    if config.atomise:
-        box_list = box_list.filterByType(['LTPage', 'LTChar'])
+    return [bbox]
 
-    filtered_box_list = filter_box_list_by_position(
-        box_list,
-        miny,
-        maxy,
-        Box._midline)
 
-    filtered_box_list = filter_box_list_by_position(
-        filtered_box_list,
-        minx,
-        maxx,
-        Box._centreline)
+def compute_edges(box_list, bounds):
+    """
+    Determines edges of cell content horizontally and vertically. It
+    works by binning and thresholding the resulting histogram for
+    each of the two axes (x and y).
+    """
 
     # Project boxes onto horizontal axis
-    column_projection = project_boxes(filtered_box_list, "column")
+    column_projection = project_boxes(box_list, "column")
 
     # Project boxes onto vertical axis
     # Erode row height by a fraction of the modal text box height
-    erodelevel = int(math.floor(calculate_modal_height(filtered_box_list) / 4))
+    erodelevel = int(math.floor(calculate_modal_height(box_list) / 4))
     row_projection = project_boxes(
-        filtered_box_list, "row",
+        box_list, "row",
         erosion=erodelevel)
 
-    #
+    rowThreshold = 3
     y_comb = comb_from_projection(row_projection, rowThreshold, "row")
     y_comb.reverse()
 
-    # columnThreshold = max(len(y_comb)*0.75,5)
+    columnThreshold = 5  # 3 works for smaller tables
     x_comb = comb_from_projection(column_projection, columnThreshold, "column")
 
-    x_comb[0] = minx
-    x_comb[-1] = maxx
+    x_comb[0] = bounds.left
+    x_comb[-1] = bounds.right
 
     # Extend y_comb to page size if extend_y is true
     if config.extend_y:
-        pageminy = min([box.bottom for box in box_list])
-        pagemaxy = max([box.top for box in box_list])
-        y_comb = comb_extend(y_comb, pageminy, pagemaxy)
-        filtered_box_list = box_list
+        y_comb = comb_extend(y_comb, bounds.top, bounds.bottom)
+        # is drj commenting this out correct?
+        # filtered_box_list = box_list
+
+    return x_comb, y_comb
+
+def compute_table_data(table):
+    """
+    Compute the final table data and return a list of lists.
+    `table` should have been prepared with a list of glyphs, and a
+    list of row_edges and column_edges (see the calling sequence in 
+    `page_to_tables`).
+    """
 
     # Applying the combs
-    table_array = apply_combs(box_list, x_comb, y_comb)
+    table_array = apply_combs(tables.glyphs, table.column_edges, table.row_edges)
 
-    # Strip out leading and trailing spaces when atomise true
-    if config.atomise:
-        tmp_table = []
-        for row in table_array:
-            stripped_row = map(unicode.strip, row)
-            tmp_table.append(stripped_row)
-        table_array = tmp_table
-
-    diagnostic_data = TableDiagnosticData(
-        filtered_box_list,
-        column_projection,
-        row_projection,
-        x_comb,
-        y_comb)
-
-    return table_array, diagnostic_data
+    return table_array
 
 
 def find_table_bounding_box(box_list, table_top_hint, table_bottom_hint):
-    """ Returns one bounding box (minx, maxx, miny, maxy) for tables based
+    """
+    Returns one bounding box (minx, maxx, miny, maxy) for tables based
     on a boxlist
     """
 
-    (miny, maxy, minx, maxx) = find_simple_bounding_box(box_list)
+    def threshold_y():
+        """
+        Try to reduce the y range with a threshold.
+        """
 
-    # Get rid of LTChar for this stage
-    text_line_box_list = box_list.filterByType('LTTextLineHorizontal')
+        yhisttop = box_list.histogram(Box._top).rounder(2)
+        yhistbottom = box_list.histogram(Box._bottom).rounder(2)
 
-    (miny, maxy) = adjust_y_from_thresholding(
-        miny, maxy, text_line_box_list)
+        try:
+            miny = min(
+                threshold_above(yhistbottom, IS_TABLE_COLUMN_COUNT_THRESHOLD))
+            # and the top of the top cell
+            maxy = max(threshold_above(yhisttop, IS_TABLE_COLUMN_COUNT_THRESHOLD))
+        except ValueError:
+            # Value errors raised when min and/or max fed empty lists
+            miny = None
+            maxy = None
+            #raise ValueError("table_threshold caught nothing")
 
-    # The table miny and maxy can be modified by hints
-    (miny, maxy) = adjust_y_from_hints(
-        miny, maxy, text_line_box_list, table_top_hint, table_bottom_hint)
+        return Box(((float("-inf"), miny, float("+inf"), maxy), None, None))
 
-    # Modify table minx and maxx with hints?
-    return (minx, maxx, miny, maxy)
+    def hints_y():
+        miny = float("-inf")
+        maxy = float("+inf")
+        if table_top_hint:
+            top_box = [box for box in box_list if top_string in box.text]
+            if top_box:
+                miny = top_box[0].top
+        if table_bottom_hint:
+            bottomBox = [box for box in box_list if bottom_string in box.text]
+            if bottomBox:
+                maxy = bottomBox[0].bottom
+        return Box(((float("-inf"), miny, float("+inf"), maxy), None, None))
 
+    bounds = box_list.bounds()
+    threshold_bounds = threshold_y()
+    hinted_bounds = hints_y()
 
-def find_simple_bounding_box(box_list):
-    miny = min([box.bottom for box in box_list])
-    maxy = max([box.top for box in box_list])
-    minx = min([box.left for box in box_list])
-    maxx = max([box.right for box in box_list])
-
-    return miny, maxy, minx, maxx
-
-
-def adjust_y_from_thresholding(miny, minx, box_list):
-    """
-    Try to reduce the y range with a threshold, wouldn't work for x
-    """
-
-    yhisttop = box_list.histogram(Box._top).rounder(2)
-    yhistbottom = box_list.histogram(Box._bottom).rounder(2)
-
-    try:
-        miny = min(
-            threshold_above(yhistbottom, IS_TABLE_COLUMN_COUNT_THRESHOLD))
-        # and the top of the top cell
-        maxy = max(threshold_above(yhisttop, IS_TABLE_COLUMN_COUNT_THRESHOLD))
-    except ValueError:
-        # Value errors raised when min and/or max fed empty lists
-        miny = None
-        maxy = None
-        #raise ValueError("table_threshold caught nothing")
-
-    return miny, maxy
-
-
-def adjust_y_from_hints(miny, maxy, box_list, top_string, bottom_string):
-
-    (hintedminy, hintedmaxy) = get_min_and_max_y_from_hints(
-        box_list, top_string, bottom_string)
-
-    if hintedminy is not None:
-        miny = hintedminy
-    if hintedmaxy is not None:
-        maxy = hintedmaxy
-
-    return miny, maxy
-
+    return bounds.clip(threshold_bounds).clip(hinted_bounds)
 
 def filter_box_list_by_position(box_list, minv, maxv, dir_fun):
     # TODO This should be in tree.py
@@ -549,6 +513,7 @@ def calculate_modal_height(box_list):
 
 
 def file_handle_from_url(URL):
+    import requests
     # TODO: move this function to a helper library
     response = requests.get(URL)
     fh = StringIO(response.content)

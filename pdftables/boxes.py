@@ -28,7 +28,7 @@ class Histogram(Counter):
 
 
 class Box(object):
-
+    
     def __init__(self, obj):
         if type(obj) == tuple:
             (self.bbox, self.classname, self.text) = obj
@@ -47,6 +47,16 @@ class Box(object):
         self.midline = (self.top + self.bottom) / 2.0
         self.centreline = (self.left + self.right) / 2.0
         self.width = self.right - self.left
+
+    def clip(self, box):
+        x0 = max(self.left, box.left)
+        x1 = min(self.right, box.right)
+        y0 = max(self.top, box.top)
+        y1 = min(self.bottom, self.bottom)
+
+        if x0 > x1 or y0 > y1:
+            return Box.empty_box
+        return type(self)(((x0, y0, x1, y0), None, None))
 
     def __getitem__(self, i):
         """backwards-compatibility helper, don't use it!"""
@@ -74,8 +84,45 @@ class Box(object):
     def _centreline(self):
         return self.centreline
 
+"""
+The empty box. This is necessary because we get one
+when we clip two boxes that do not overlap (and
+possibly in other situations).
+
+By convention it has left at +Inf, right at -Inf, top
+at +Inf, bottom at -Inf.
+
+It is defined this way so that it is invariant under clipping.
+"""
+Box.empty_box = Box(((float("+inf"), float("+inf"),
+                      float("-inf"), float("-inf")), None, None))
+
 
 class BoxList(list):
+   
+    def inside(self, rect):
+        """
+        Return a fresh instance that is the subset that is (strictly)
+        inside `rect`.
+        """
+
+        def is_in_rect(box):
+            return (rect.left <= box.left <= box.right <= rect.right and
+                    rect.top <= box.top <= box.bottom <= rect.bottom)
+          
+        return type(self)(box for box in self if is_in_rect(box))
+
+    def bounds(self):
+        """Return the (strictest) bounding box of all elements."""
+        miny = min(box.top for box in self)
+        maxy = max(box.bottom for box in self)
+        minx = min(box.left for box in self)
+        maxx = max(box.right for box in self)
+
+        return Box(((minx, miny, maxx, maxy), None, None))
+
+    def __repr__(self):
+        return "BoxList(len={0})".format(len(self))
 
     def purge_empty_text(self):
         # TODO: BUG: we remove characters without adjusting the width / coords

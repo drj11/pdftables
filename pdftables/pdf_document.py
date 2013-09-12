@@ -73,12 +73,10 @@ class PDFPage(object):
         "Select bounding boxes for lines"
 
     @abc.abstractmethod
-    def get_boxes(self, box_types):
+    def get_glyphs(self):
         """
-        Obtain a list of bounding boxes for objects on the page.
-
-        box_types can be used to specify which objects to retrieve or None
-        indicates that bounding boxes of all available types will be obtained.
+        Obtain a list of bounding boxes (Box instances) for all glyphs
+        on the page.
         """
 
     @abc.abstractproperty

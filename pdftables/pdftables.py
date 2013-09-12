@@ -17,7 +17,8 @@ http://denis.papathanasiou.org/2010/08/04/extracting-text-images-from-pdf-files
 # TODO Handle argentina_diputados_voting_record.pdf automatically
 # TODO Handle multiple tables on one page
 
-# TODO(pwaller/paulfurley) Specify our public interface here (and hide everything else)
+# TODO(pwaller/paulfurley) Specify our public interface here
+# (and hide everything else)
 # __all__ = ["get_tables"]
 
 import sys
@@ -28,7 +29,7 @@ from config_parameters import ConfigParameters
 
 import collections
 
-from tree import Leaf, LeafList
+from boxes import Box, BoxList
 import requests  # TODO: remove this dependency
 from cStringIO import StringIO
 import math
@@ -38,16 +39,22 @@ from counter import Counter
 IS_TABLE_COLUMN_COUNT_THRESHOLD = 3
 IS_TABLE_ROW_COUNT_THRESHOLD = 3
 
+
 class TableDiagnosticData(object):
-    def __init__(self, box_list=LeafList(), top_plot=dict(), left_plot=dict(), x_comb=[], y_comb=[]):
+
+    def __init__(self, box_list=BoxList(), top_plot=dict(), left_plot=dict(),
+                 x_comb=[], y_comb=[]):
         self.box_list = box_list
         self.top_plot = top_plot
         self.left_plot = left_plot
         self.x_comb = x_comb
         self.y_comb = y_comb
 
+
 class Table(list):
-    def __init__(self, content, page, page_total, table_index, table_index_total):
+
+    def __init__(self, content, page, page_total, table_index,
+                 table_index_total):
         super(Table, self).__init__(content)
         self.page_number = page
         self.total_pages = page_total
@@ -59,13 +66,15 @@ TOP = 3
 RIGHT = 2
 BOTTOM = 1
 
+
 def get_tables(fh):
     """
     Return a list of 'tables' from the given file handle, where a table is a
     list of rows, and a row is a list of strings.
     """
-    pdf = PDFDocument(fh)
+    pdf = PDFDocument.from_fileobj(fh)
     return get_tables_from_document(pdf)
+
 
 def get_tables_from_document(pdf_document):
     """
@@ -102,22 +111,22 @@ def crop_table(table):
         else:
             break
 
+    # TODO(pwaller): wtf?
     for row in list(reversed(table)):  # bottom -> top
         if not any(cell.strip() for cell in row):
             table.remove(row)
         else:
             break
 
+
 def page_contains_tables(pdf_page):
     if not isinstance(pdf_page, PDFPage):
         raise TypeError("Page must be PDFPage, not {}".format(
             pdf_page.__class__))
 
-    box_list = LeafList().populate(pdf_page)
-    for item in box_list:
-        assert isinstance(item, Leaf), "NOT LEAF"
-    yhist = box_list.histogram(Leaf._top).rounder(1)
+    box_list = pdf_page.get_boxes(set((PDFPage.BoxPage, PDFPage.BoxLine)))
 
+    yhist = box_list.histogram(Box._top).rounder(1)
     test = [k for k, v in yhist.items() if v > IS_TABLE_COLUMN_COUNT_THRESHOLD]
     return len(test) > IS_TABLE_ROW_COUNT_THRESHOLD
 
@@ -181,10 +190,10 @@ def comb_from_projection(projection, threshold, orientation):
     onto either the y axis (for rows) or the x-axis (for columns). These
     boundaries are known as the comb
     """
-    if orientation=="row":
-        tol=1
-    elif orientation=="column":
-        tol=3
+    if orientation == "row":
+        tol = 1
+    elif orientation == "column":
+        tol = 3
 
     projection_threshold = threshold_above(projection, threshold)
 
@@ -197,25 +206,38 @@ def comb_from_projection(projection, threshold, orientation):
     uppers = []
     lowers = []
 
+    # TODO(pwaller): Use a more readable algorithm, determine purpose, maybe
+    #                refactor or use more general approach.
+    #
+    # What is the + 1 for? Why?
+    #
+    # for this, next in zip(a, a[1:])
+    #     if this + 1 < next:
+    #         uppers.append(this)
+    #         lowers.append(next)
+
     lowers.append(projection_threshold[0])
     for i in range(1, len(projection_threshold)):
         if projection_threshold[i] > (
-                projection_threshold[i-1] + 1):
+                projection_threshold[i - 1] + 1):
             uppers.append(projection_threshold[i - 1])
             lowers.append(projection_threshold[i])
     uppers.append(projection_threshold[-1])
 
     comb = comb_from_uppers_and_lowers(uppers, lowers, tol=tol,
-                                       projection = projection)
+                                       projection=projection)
     comb.reverse()
 
     return comb
 
 
 def comb_from_uppers_and_lowers(uppers, lowers, tol=1, projection=dict()):
-    """Called by comb_from_projection to calculate the comb given a set of
+    """
+    Called by comb_from_projection to calculate the comb given a set of
     uppers and lowers, which are upper and lower edges of the thresholded
-    projection"""
+    projection
+    """
+
     # tol is a tolerance to remove very small minima, increasing to 2 fowls up
     # row separation
     assert len(uppers) == len(lowers)
@@ -224,7 +246,7 @@ def comb_from_uppers_and_lowers(uppers, lowers, tol=1, projection=dict()):
     comb = []
     comb.append(uppers[0])
     for i in range(1, len(uppers)):
-        if (lowers[i - 1]-uppers[i])>tol:
+        if (lowers[i - 1] - uppers[i]) > tol:
             comb.append(find_minima(lowers[i - 1], uppers[i], projection))
             #comb.append(find_minima(lowers[i - 1], uppers[i]))
 
@@ -232,15 +254,16 @@ def comb_from_uppers_and_lowers(uppers, lowers, tol=1, projection=dict()):
 
     return comb
 
+
 def find_minima(lower, upper, projection=dict()):
 
-    #print lower, upper, projection
-    if len(projection)==0:
+    # print lower, upper, projection
+    if len(projection) == 0:
         idx = (lower + upper) / 2.0
     else:
         profile = []
         for i in range(upper, lower):
-            #print projection[i]
+            # print projection[i]
             profile.append(projection[i])
 
         val, idx = min((val, idx) for (idx, val) in enumerate(profile))
@@ -249,8 +272,11 @@ def find_minima(lower, upper, projection=dict()):
 
     return idx
 
+
 def comb_extend(comb, minv, maxv):
-    """Extend the comb to minv and maxv"""
+    """
+    Extend the comb to minv and maxv
+    """
     # TODO should this truncate if minv>minc or maxc>maxc
     # print y_comb
     # Find sort order of comb, convert to ascending
@@ -258,16 +284,20 @@ def comb_extend(comb, minv, maxv):
     if comb[0] > comb[-1]:
         comb.reverse()
         reversed = True
+
     # Find min and max of comb
     minc = comb[0]
     maxc = comb[-1]
+
     # Get average row spacing
     rowSpacing = numpy_subset.average(numpy_subset.diff(comb))
+
     # Extend minimum
     if minv < minc:
         comb.reverse()
         comb.extend(list(numpy_subset.arange(minc, minv, -rowSpacing))[1:])
         comb.reverse()
+
     # Extend maximum
     if maxv > maxc:
         comb.extend(list(numpy_subset.arange(maxc, maxv, rowSpacing))[1:])
@@ -309,7 +339,7 @@ def project_boxes(box_list, orientation, erosion=0):
 
 
 def get_pdf_page(fh, pagenumber):
-    pdf = PDFDocument(fh)
+    pdf = PDFDocument.from_fileobj(fh)
     return pdf.get_pages()[pagenumber - 1]
 
 
@@ -334,7 +364,7 @@ def rounder(val, tol):
     return round((1.0 * val) / tol) * tol
 
 
-#def filter_box_list_by_type(box_list, flt):
+# def filter_box_list_by_type(box_list, flt):
 #    return [box for box in box_list if box.classname in flt]
 
 def page_to_tables(pdf_page, config=None):
@@ -342,7 +372,8 @@ def page_to_tables(pdf_page, config=None):
     Get a rectangular list of list of strings from one page of a document
     """
     if not isinstance(pdf_page, PDFPage):
-        raise TypeError("Page must be PDFPage, not {}".format(pdf_page.__class__))
+        raise TypeError(
+            "Page must be PDFPage, not {}".format(pdf_page.__class__))
 
     if not config:
         config = ConfigParameters()
@@ -352,20 +383,19 @@ def page_to_tables(pdf_page, config=None):
     columnThreshold = 5  # 3 works for smaller tables
     rowThreshold = 3
 
+    boxtypes = set((PDFPage.BoxPage, PDFPage.BoxLine))
     if config.atomise:
-        flt = ['LTPage', 'LTTextLineHorizontal', 'LTChar']
-    else:
-        flt = ['LTPage', 'LTTextLineHorizontal']
-    # flt = ['LTPage', 'LTTextLineHorizontal', 'LTFigure']
-    box_list = LeafList().populate(pdf_page, flt).purge_empty_text()
+        boxtypes.add(PDFPage.BoxGlyph)
+
+    box_list = pdf_page.get_boxes(boxtypes).purge_empty_text()
 
     (minx, maxx, miny, maxy) = find_table_bounding_box(
         box_list, config.table_top_hint, config.table_bottom_hint)
 
     """If miny and maxy are None then we found no tables and should exit"""
     if miny is None and maxy is None:
-       print "found no tables"
-       return table_array, TableDiagnosticData()
+        print "found no tables"
+        return table_array, TableDiagnosticData()
 
     if config.atomise:
         box_list = box_list.filterByType(['LTPage', 'LTChar'])
@@ -374,13 +404,13 @@ def page_to_tables(pdf_page, config=None):
         box_list,
         miny,
         maxy,
-        Leaf._midline)
+        Box._midline)
 
     filtered_box_list = filter_box_list_by_position(
         filtered_box_list,
         minx,
         maxx,
-        Leaf._centreline)
+        Box._centreline)
 
     # Project boxes onto horizontal axis
     column_projection = project_boxes(filtered_box_list, "column")
@@ -416,7 +446,7 @@ def page_to_tables(pdf_page, config=None):
     if config.atomise:
         tmp_table = []
         for row in table_array:
-            stripped_row = map(unicode.strip,row)
+            stripped_row = map(unicode.strip, row)
             tmp_table.append(stripped_row)
         table_array = tmp_table
 
@@ -437,18 +467,17 @@ def find_table_bounding_box(box_list, table_top_hint, table_bottom_hint):
 
     (miny, maxy, minx, maxx) = find_simple_bounding_box(box_list)
 
-    """ Get rid of LTChar for this stage """
+    # Get rid of LTChar for this stage
     text_line_box_list = box_list.filterByType('LTTextLineHorizontal')
 
     (miny, maxy) = adjust_y_from_thresholding(
         miny, maxy, text_line_box_list)
 
-    """The table miny and maxy can be modified by hints"""
-
+    # The table miny and maxy can be modified by hints
     (miny, maxy) = adjust_y_from_hints(
         miny, maxy, text_line_box_list, table_top_hint, table_bottom_hint)
 
-    """Modify table minx and maxx with hints? """
+    # Modify table minx and maxx with hints?
     return (minx, maxx, miny, maxy)
 
 
@@ -462,25 +491,32 @@ def find_simple_bounding_box(box_list):
 
 
 def adjust_y_from_thresholding(miny, minx, box_list):
-    """ Try to reduce the y range with a threshold, wouldn't work for x"""
-    yhisttop = box_list.histogram(Leaf._top).rounder(2)
-    yhistbottom = box_list.histogram(Leaf._bottom).rounder(2)
+    """
+    Try to reduce the y range with a threshold, wouldn't work for x
+    """
+
+    yhisttop = box_list.histogram(Box._top).rounder(2)
+    yhistbottom = box_list.histogram(Box._bottom).rounder(2)
 
     try:
-        miny = min(threshold_above(yhistbottom, IS_TABLE_COLUMN_COUNT_THRESHOLD))
-    # and the top of the top cell
+        miny = min(
+            threshold_above(yhistbottom, IS_TABLE_COLUMN_COUNT_THRESHOLD))
+        # and the top of the top cell
         maxy = max(threshold_above(yhisttop, IS_TABLE_COLUMN_COUNT_THRESHOLD))
     except ValueError:
         # Value errors raised when min and/or max fed empty lists
         miny = None
         maxy = None
         #raise ValueError("table_threshold caught nothing")
+
     return miny, maxy
 
 
 def adjust_y_from_hints(miny, maxy, box_list, top_string, bottom_string):
+
     (hintedminy, hintedmaxy) = get_min_and_max_y_from_hints(
         box_list, top_string, bottom_string)
+
     if hintedminy is not None:
         miny = hintedminy
     if hintedmaxy is not None:
@@ -490,8 +526,8 @@ def adjust_y_from_hints(miny, maxy, box_list, top_string, bottom_string):
 
 
 def filter_box_list_by_position(box_list, minv, maxv, dir_fun):
-    #TODO This should be in tree.py
-    filtered_box_list = LeafList()
+    # TODO This should be in tree.py
+    filtered_box_list = BoxList()
     # print minv, maxv, index
     for box in box_list:
         # box = boxstruct[0]

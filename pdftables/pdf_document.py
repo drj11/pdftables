@@ -1,98 +1,88 @@
-#!/usr/bin/env python
+"""
+Backend abstraction for PDFDocuments
+"""
 
-import pdfminer.pdfparser
-import pdfminer.pdfinterp
-import pdfminer.pdfdevice
-import pdfminer.layout
-import pdfminer.converter
+import abc
+import os
+
+DEFAULT_BACKEND = "pdfminer"
+BACKEND = os.environ.get("PDFTABLES_BACKEND", DEFAULT_BACKEND).lower()
+
+# TODO(pwaller): Use abstract base class?
+# What does it buy us? Can we enforce that only methods specified in an ABC
+# are used by client code?
 
 
 class PDFDocument(object):
-    """
-    Wrapper to abstract away underlying PDF class. This is partly to simplify
-    the concepts in the rest of the code to just the ones we need. And partly
-    so we can, for example, change from PDFMiner to pdftoxml later if
-    necessary.
-    """
+    __metaclass__ = abc.ABCMeta
 
-    @staticmethod
-    def _initialise(fh):
-        (doc, parser) = (pdfminer.pdfparser.PDFDocument(),
-                         pdfminer.pdfparser.PDFParser(fh))
+    @classmethod
+    def _get_backend(cls):
+        """
+        Returns the PDFDocument class to use based on configuration from
+        enviornment or pdf_document.BACKEND
+        """
+        # If `cls` is not already a subclass of the base PDFDocument, pick one
+        if not issubclass(cls, PDFDocument):
+            return cls
 
-        parser.set_document(doc)
-        doc.set_parser(parser)
+        # Imports have to go inline to avoid circular imports with the backends
+        if BACKEND == "pdfminer":
+            from pdf_document_pdfminer import PDFDocument as PDFDoc
+            return PDFDoc
 
-        doc.initialize('')
-        if not doc.is_extractable:
-            raise ValueError(
-                "pdfminer.pdfparser.PDFDocument is_extractable != True")
-        la_params = pdfminer.layout.LAParams()
-        la_params.word_margin = 0.0
+        elif BACKEND == "poppler":
+            from pdf_document_poppler import PDFDocument as PDFDoc
+            return PDFDoc
 
-        resource_manager = pdfminer.pdfinterp.PDFResourceManager()
-        aggregator = pdfminer.converter.PDFPageAggregator(
-            resource_manager, laparams=la_params)
+        raise NotImplementedError("Unknown backend '{0}'".format(BACKEND))
 
-        interpreter = pdfminer.pdfinterp.PDFPageInterpreter(
-            resource_manager, aggregator)
+    @classmethod
+    def from_fileobj(cls, fh):
+        Class = cls._get_backend()
+        return Class(fh)
 
-        return doc, interpreter, aggregator
+    def __init__(self, *args, **kwargs):
+        raise RuntimeError(
+            "Don't use this constructor, use a {0}.from_* method instead!"
+            .format(self.__class__.__name__))
 
-    def __init__(self, fh):
-        self._pages = None
-
-        (self._doc, self._interpreter, self._device) = self._initialise(fh)
-
+    @abc.abstractmethod
     def __len__(self):
-        return len(self.get_pages())
-
-    def get_creator(self):
-        return self._doc.info[0]['Creator']  # TODO: what's doc.info ?
-
-    def get_pages(self):
         """
-        Returns a list of lazy pages (parsed on demand)
+        Return the number of pages in the PDF
         """
-        if not self._pages:
-            self._construct_pages()
 
-        return self._pages
-
-    def get_page(self, page_number):
+    @abc.abstractmethod
+    def get_page(self, number):
         """
-        1-based page getter
+        Return a PDFPage for page `number` (1 indexed!)
         """
-        pages = self.get_pages()
-        if 1 <= page_number <= len(pages):
-            return pages[page_number - 1]
-        raise IndexError("Invalid page. Reminder: get_page() is 1-indexed "
-            "(there are {0} pages)!".format(len(pages)))
-
-    def _construct_pages(self):
-        self._pages = [PDFPage(self, page) for page in self._doc.get_pages()]
 
 
 class PDFPage(object):
-    """
-    Lazy page processor.
-    """
+    __metaclass__ = abc.ABCMeta
 
-    def __init__(self, parent_pdf_document, page):
-        assert isinstance(page, pdfminer.pdfparser.PDFPage), page.__class__
+    class BoxPage:
+        "Select page objects"
+    class BoxGlyph:
+        "Select glyph boxes"
+    class BoxWord:
+        "Select bounding boxes for words"
+    class BoxLine:
+        "Select bounding boxes for lines"
 
-        self.pdf_document = parent_pdf_document
-        self._page = page
-        self._lt_page = None
+    @abc.abstractmethod
+    def get_boxes(self, box_types):
+        """
+        Obtain a list of bounding boxes for objects on the page.
 
-    def lt_page(self):
-        if not self._lt_page:
-            self._parse_page()
+        box_types can be used to specify which objects to retrieve or None
+        indicates that bounding boxes of all available types will be obtained.
+        """
 
-        return self._lt_page
-
-    def _parse_page(self):
-        self.pdf_document._interpreter.process_page(self._page)
-        self._lt_page = self.pdf_document._device.get_result()
-        assert isinstance(self._lt_page,
-                          pdfminer.layout.LTPage), self._lt_page.__class__
+    @abc.abstractproperty
+    def size(self):
+        """
+        (width, height) of page
+        """

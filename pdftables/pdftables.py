@@ -370,6 +370,14 @@ def page_to_tables(pdf_page, config=None):
 
     tables.all_glyphs = pdf_page.get_glyphs()
 
+    # :todo:(drj)(pwaller) Remove the flipping hack.
+    if tables.all_glyphs:
+        first = tables.all_glyphs[0]
+        if first.top > first.bottom:
+            print "flipping"
+            flipped = BoxList(Box(((box.left, box.bottom, box.right, box.top), None, None)) for box in tables.all_glyphs)
+            tables.all_glyphs = flipped
+
     for box in tables.bounding_boxes:
         table = Table()
         table.glyphs = tables.all_glyphs.inside(box)

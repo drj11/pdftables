@@ -1,3 +1,4 @@
 *.pyc
 fixtures/
 .*.swp
+/*.egg-info

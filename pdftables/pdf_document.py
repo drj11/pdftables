@@ -24,7 +24,6 @@ class PDFDocument(object):
         """
         # If `cls` is not already a subclass of the base PDFDocument, pick one
         if not issubclass(cls, PDFDocument):
-            print "HERE", cls
             return cls
 
         # Imports have to go inline to avoid circular imports with the backends
@@ -32,9 +31,9 @@ class PDFDocument(object):
             from pdf_document_pdfminer import PDFDocument as PDFDoc
             return PDFDoc
 
-        #elif BACKEND == "poppler":
-            #from pdf_document_poppler import PDFDocument as PDFDoc
-            #return PDFDoc
+        elif BACKEND == "poppler":
+            from pdf_document_poppler import PDFDocument as PDFDoc
+            return PDFDoc
 
         raise NotImplementedError("Unknown backend '{0}'".format(BACKEND))
 
@@ -49,11 +48,16 @@ class PDFDocument(object):
             .format(self.__class__.__name__))
 
     @abc.abstractmethod
+    def __len__(self):
+        """
+        Return the number of pages in the PDF
+        """
+
+    @abc.abstractmethod
     def get_page(self, number):
         """
         Return a PDFPage for page `number` (1 indexed!)
         """
-        raise NotImplementedError
 
 
 class PDFPage(object):
@@ -68,7 +72,7 @@ class PDFPage(object):
     class BoxLine:
         "Select bounding boxes for lines"
 
-    #@abc.abstractmethod
+    @abc.abstractmethod
     def get_boxes(self, box_types):
         """
         Obtain a list of bounding boxes for objects on the page.
@@ -76,4 +80,9 @@ class PDFPage(object):
         box_types can be used to specify which objects to retrieve or None
         indicates that bounding boxes of all available types will be obtained.
         """
-        raise NotImplementedError
+
+    @abc.abstractproperty
+    def size(self):
+        """
+        (width, height) of page
+        """

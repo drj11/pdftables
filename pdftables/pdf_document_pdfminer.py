@@ -22,10 +22,7 @@ from .boxes import Box, BoxList
 class PDFDocument(BasePDFDocument):
 
     """
-    Wrapper to abstract away underlying PDF class. This is partly to simplify
-    the concepts in the rest of the code to just the ones we need. And partly
-    so we can, for example, change from PDFMiner to pdftoxml later if
-    necessary.
+    pdfminer implementation of PDFDocument
     """
 
     @staticmethod
@@ -100,7 +97,7 @@ def children(obj):
 class PDFPage(BasePDFPage):
 
     """
-    Lazy page processor.
+    pdfminer implementation of PDFPage
     """
 
     item_type_map = {
@@ -116,6 +113,11 @@ class PDFPage(BasePDFPage):
         self.pdf_document = parent_pdf_document
         self._page = page
         self._lt_page = None
+
+    @property
+    def size(self):
+        x0, y0, x1, y1 = self._page.mediabox
+        return x1 - x0, y1 - y0
 
     def get_boxes(self, box_types):
         """

@@ -6,23 +6,44 @@ from nose.tools import assert_equal
 from os.path import join, dirname
 import os
 
-from pdftables import get_tables
+from pdftables import page_to_tables
+from pdftables.pdf_document import PDFDocument
 from pdftables.display import to_string
+from pdftables.diagnostics import render_page, make_annotations
 
 from fixtures import fixture
 
 SAMPLE_DIR = join(dirname(__file__), '..', 'fixtures', 'sample_data')
+RENDERED_DIR = join(dirname(__file__), '..', 'fixtures', 'rendered')
 EXPECTED_DIR = join(dirname(__file__), '..', 'fixtures', 'expected_output')
 ACTUAL_DIR = join(dirname(__file__), '..', 'fixtures', 'actual_output')
 
 
-def _test_sample_data():
+def test_sample_data():
     for filename in os.listdir(SAMPLE_DIR):
         yield _test_sample_pdf, filename
 
 
 def _test_sample_pdf(short_filename):
-    tables = get_tables_from_document(fixture(short_filename))
+    doc = PDFDocument(fixture(short_filename))
+    for page_number, page in enumerate(doc.get_pages()):
+
+        # TODO: Enable this!
+        # tables = page_to_tables(fixture(short_filename))
+        # annotations = make_annotations(tables)
+        annotations = []
+
+        outfile_base = join(
+            RENDERED_DIR,
+            'svgs',
+            '{0}_{1}'.format(short_filename))
+
+        render_page(
+            join(SAMPLE_DIR, short_filename),
+            page_number,
+            annotations,
+            svg_file=outfile_base + '.svg',
+            png_file=outfile_base + '.png')
 
     assert_equal(get_expected_number_of_tables(short_filename), len(tables))
     for table_num, table in enumerate(tables):

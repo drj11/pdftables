@@ -505,8 +505,7 @@ def filter_box_list_by_position(box_list, minv, maxv, dir_fun):
 def calculate_modal_height(box_list):
     height_list = []
     for box in box_list:
-        if box.classname in ('LTTextLineHorizontal', 'LTChar'):
-            height_list.append(round(box.bbox[TOP] - box.bbox[BOTTOM]))
+        height_list.append(round(box.bbox[TOP] - box.bbox[BOTTOM]))
 
     modal_height = Counter(height_list).most_common(1)
     return modal_height[0][0]

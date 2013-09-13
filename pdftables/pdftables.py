@@ -372,6 +372,9 @@ class TableContainer(object):
     def __repr__(self):
         return "TableContainer(" + repr(self.__dict__) + ")"
 
+    def __iter__(self):
+        return iter(self.tables)
+
 
 def page_to_tables(pdf_page, config=None):
     """

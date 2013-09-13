@@ -33,7 +33,7 @@ setup(
     tests_require=[],
     entry_points={
         'console_scripts': [
-            'pdftables-dump = pdftables.scripts.dump:main',
+            'pdftables-render = pdftables.scripts.render:main',
         ]
     },
 )

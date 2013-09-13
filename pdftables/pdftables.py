@@ -468,12 +468,13 @@ def compute_table_data(table):
     """
     Compute the final table data and return a list of lists.
     `table` should have been prepared with a list of glyphs, and a
-    list of row_edges and column_edges (see the calling sequence in 
+    list of row_edges and column_edges (see the calling sequence in
     `page_to_tables`).
     """
 
     # Applying the combs
-    table_array = apply_combs(table.glyphs, table.column_edges, table.row_edges)
+    table_array = apply_combs(
+        table.glyphs, table._column_edges, table._row_edges)
 
     return table_array
 
@@ -526,7 +527,7 @@ def find_table_bounding_box(box_list, table_top_hint, table_bottom_hint):
     threshold_bounds = threshold_y()
     hinted_bounds = hints_y()
 
-    return bounds.clip(threshold_bounds).clip(hinted_bounds)
+    return bounds.clip(threshold_bounds, hinted_bounds)
 
 
 def filter_box_list_by_position(box_list, minv, maxv, dir_fun):

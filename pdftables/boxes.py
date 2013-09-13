@@ -50,17 +50,25 @@ class Box(object):
             return "<Box rect=empty>"
         return "<Box rect={0}>".format(self.bbox)
 
-    def clip(self, rhs):
-        x0 = max(self.left, rhs.left)
-        x1 = min(self.right, rhs.right)
-        y0 = max(self.top, rhs.top)
-        y1 = min(self.bottom, rhs.bottom)
+    def clip(self, *rectangles):
+        """
+        Return the rectangle representing the subset of this Box and all of
+        rectangles. If there is no rectangle left, ``Box.empty_box`` is
+        returned which always clips to the empty box.
+        """
 
-        if x0 > x1 or y0 > y1:
-            # There is no rect left, so return the "empty set"
-            return Box.empty_box
+        x1, y1, x2, y2 = self.bbox
+        for rectangle in rectangles:
+            x1 = max(x1, rectangle.left)
+            x2 = min(x2, rectangle.right)
+            y1 = max(y1, rectangle.top)
+            y2 = min(y2, rectangle.bottom)
 
-        return type(self)(((x0, y0, x1, y1), None, None))
+            if x1 > x2 or y1 > y2:
+                # There is no rect left, so return the "empty set"
+                return Box.empty_box
+
+        return type(self)(((x1, y1, x2, y2), None, None))
 
     def __getitem__(self, i):
         """backwards-compatibility helper, don't use it!"""

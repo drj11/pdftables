@@ -408,7 +408,7 @@ def page_to_tables(pdf_page, config=None):
         table.bounding_box = box
         table.glyphs = tables.all_glyphs.inside(box)
         edges = compute_edges(table.glyphs, box, config)
-        table.row_edges, table.column_edges = edges
+        (table.column_edges, table.row_edges) = edges
         table.data = compute_table_data(table)
         tables.add(table)
 

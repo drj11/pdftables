@@ -10,7 +10,7 @@ from os.path import abspath
 Point = namedtuple('Point', ['x', 'y'])
 Line = namedtuple('Line', ['start', 'end'])
 Rectangle = namedtuple('Rectangle', ['top_left', 'bottom_right'])
-Annotation = namedtuple('Annotation', ['name', 'colour', 'shapes'])
+AnnotationGroup = namedtuple('AnnotationGroup', ['name', 'colour', 'shapes'])
 Colour = namedtuple('Colour', ['red', 'green', 'blue'])
 
 __all__ = [
@@ -92,7 +92,7 @@ def render_page(pdf_filename, page_number, annotations, svg_file=None,
 
     renderer = CairoPdfPageRenderer(page, svg_file, png_file)
     for annotation in annotations:
-        assert isinstance(annotation, Annotation), (
+        assert isinstance(annotation, AnnotationGroup), (
             "annotations: {0}, annotation: {1}".format(
                 annotations, annotation))
         for shape in annotation.shapes:
@@ -113,36 +113,36 @@ def extract_pdf_page(filename, page_number):
 def make_annotations(table_container):
     """
     Take the output of the table-finding algorithm (TableFinder) and create
-    Annotations. These can be drawn on top of the original PDF page to
+    AnnotationGroups. These can be drawn on top of the original PDF page to
     visualise how the algorithm arrived at its output.
     """
 
     annotations = []
 
     annotations.append(
-        Annotation(
+        AnnotationGroup(
             name='table_bounding_boxes',
-            colour=Colour(1, 0, 0),
+            colour=Colour(0, 0, 1),
             shapes=convert_rectangles(table_container.bounding_boxes)))
 
     annotations.append(
-        Annotation(
+        AnnotationGroup(
             name='all_glyphs',
             colour=Colour(0, 1, 0),
             shapes=convert_rectangles(table_container.all_glyphs)))
 
     for table in table_container:
         annotations.append(
-            Annotation(
+            AnnotationGroup(
                 name='row_edges',
-                colour=Colour(0, 0, 1),
+                colour=Colour(1, 0, 0),
                 shapes=convert_horizontal_lines(
                     table.row_edges, table.bounding_box)))
 
         annotations.append(
-            Annotation(
+            AnnotationGroup(
                 name='column_edges',
-                colour=Colour(0, 0, 1),
+                colour=Colour(1, 0, 0),
                 shapes=convert_vertical_lines(
                     table.column_edges, table.bounding_box)))
 
@@ -165,7 +165,7 @@ def convert_vertical_lines(x_edges, bbox):
 
 if __name__ == '__main__':
     annotations = [
-        Annotation(
+        AnnotationGroup(
             name='',
             colour=Colour(1, 0, 0),
             shapes=[Rectangle(Point(100, 100), Point(200, 200))])

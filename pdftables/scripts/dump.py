@@ -15,11 +15,13 @@ Options:
     -O --output-dir=<path> 	Path to write debug data to
 """
 
-import pdftables
 # Use $ pip install --editable pdftables
 # to install this util in your path.
 
+import pdftables
+
 from os.path import basename
+
 from docopt import docopt
 
 from pdftables.pdf_document import PDFDocument
@@ -44,7 +46,7 @@ def render_pdf(pdf_filename):
     with open(pdf_filename, "rb") as fd:
 
         doc = PDFDocument.from_fileobj(fd)
-        print doc
+
         for page_number, page in enumerate(doc.get_pages()):
             svg_file = 'svgs/{0}_{1}.svg'.format(
                 basename(pdf_filename), page_number)
@@ -56,9 +58,9 @@ def render_pdf(pdf_filename):
             render_page(
                 pdf_filename, page_number, annotations, svg_file, png_file)
 
+
 def check(path):
     fileobj = open(path, 'rb')
     doc = PDFDocument.from_fileobj(fileobj)
     tables = pdftables.page_to_tables(doc.get_page(0))
     print tables
-

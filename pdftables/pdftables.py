@@ -366,7 +366,6 @@ class Table(object):
             return "<Table [empty]>"
 
 
-
 class TableContainer(object):
 
     """
@@ -403,15 +402,6 @@ def page_to_tables(pdf_page, config=None):
     tables.bounding_boxes = find_bounding_boxes(pdf_page, config)
 
     tables.all_glyphs = pdf_page.get_glyphs()
-
-    # :todo:(drj)(pwaller) Remove the flipping hack.
-    if tables.all_glyphs:
-        first = tables.all_glyphs[0]
-        if first.top > first.bottom:
-            print "flipping"
-            flipped = BoxList(Box(((box.left, box.bottom, box.right, box.top), None, None))
-                              for box in tables.all_glyphs)
-            tables.all_glyphs = flipped
 
     for box in tables.bounding_boxes:
         table = Table()
@@ -506,10 +496,11 @@ def find_table_bounding_box(box_list, table_top_hint, table_bottom_hint):
         yhistbottom = box_list.histogram(boxbottom).rounder(2)
 
         try:
-            miny = min(
-                threshold_above(yhistbottom, IS_TABLE_COLUMN_COUNT_THRESHOLD))
+            # TODO(pwaller): fix this, remove except block
+            threshold = IS_TABLE_COLUMN_COUNT_THRESHOLD
+            miny = min(threshold_above(yhisttop, threshold))
             # and the top of the top cell
-            maxy = max(threshold_above(yhisttop, IS_TABLE_COLUMN_COUNT_THRESHOLD))
+            maxy = max(threshold_above(yhistbottom, threshold))
         except ValueError:
             # Value errors raised when min and/or max fed empty lists
             miny = None

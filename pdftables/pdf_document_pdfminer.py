@@ -129,7 +129,12 @@ class PDFPage(BasePDFPage):
         def keep(o):
             return isinstance(o, pdfminer.layout.LTChar)
 
+        _, page_height = self.size
+
         def make_box(obj):
+            # TODO(pwaller): Take into account `self._page.rotate`?
+            x1, y1, x2, y2 = obj.bbox
+            bbox = x1, page_height - y1, x2, page_height - y2
             # TODO: Invert y coordinates
             return Box(obj)
 

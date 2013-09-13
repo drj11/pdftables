@@ -100,31 +100,24 @@ class PDFPage(BasePDFPage):
     pdfminer implementation of PDFPage
     """
 
-    item_type_map = {
-        "LTPage": BasePDFPage.BoxPage,
-        "LTTextLineHorizontal": BasePDFPage.BoxLine,
-        # "TODO(pwaller)": BasePDFPage.BoxWord
-        "LTChar": BasePDFPage.BoxGlyph,
-    }
-
     def __init__(self, parent_pdf_document, page):
         assert isinstance(page, pdfminer.pdfparser.PDFPage), page.__class__
 
         self.pdf_document = parent_pdf_document
         self._page = page
-        self._lt_page = None
+        self._cached_lt_page = None
 
     @property
     def size(self):
-        x0, y0, x1, y1 = self._page.mediabox
-        return x1 - x0, y1 - y0
+        x1, y1, x2, y2 = self._page.mediabox
+        return x2 - x1, y2 - y1
 
     def get_glyphs(self):
         """
         Return a BoxList of the glyphs on this page.
         """
 
-        items = children(self.lt_page())
+        items = children(self._lt_page())
 
         def keep(o):
             return isinstance(o, pdfminer.layout.LTChar)
@@ -135,18 +128,17 @@ class PDFPage(BasePDFPage):
             # TODO(pwaller): Take into account `self._page.rotate`?
             x1, y1, x2, y2 = obj.bbox
             bbox = x1, page_height - y1, x2, page_height - y2
-            # TODO: Invert y coordinates
             return Box(obj)
 
         return BoxList(make_box(obj) for obj in items if keep(obj))
 
-    def lt_page(self):
-        if not self._lt_page:
+    def _lt_page(self):
+        if not self._cached_lt_page:
             self._parse_page()
-        return self._lt_page
+        return self._cached_lt_page
 
     def _parse_page(self):
         self.pdf_document._interpreter.process_page(self._page)
-        self._lt_page = self.pdf_document._device.get_result()
-        assert isinstance(self._lt_page, pdfminer.layout.LTPage), (
-            self._lt_page.__class__)
+        self._cached_lt_page = self.pdf_document._device.get_result()
+        assert isinstance(self._cached_lt_page, pdfminer.layout.LTPage), (
+            self._cached_lt_page.__class__)

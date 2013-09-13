@@ -16,7 +16,7 @@ from .pdf_document import (
     PDFPage as BasePDFPage,
 )
 
-from .boxes import Box, BoxList
+from .boxes import Box, BoxList, Rectangle
 
 
 class PDFDocument(BasePDFDocument):
@@ -71,12 +71,12 @@ class PDFDocument(BasePDFDocument):
 
     def get_page(self, page_number):
         """
-        1-based page getter
+        0-based page getter
         """
         pages = self.get_pages()
-        if 1 <= page_number <= len(pages):
-            return pages[page_number - 1]
-        raise IndexError("Invalid page. Reminder: get_page() is 1-indexed "
+        if 0 <= page_number < len(pages):
+            return pages[page_number]
+        raise IndexError("Invalid page. Reminder: get_page() is 0-indexed "
                          "(there are {0} pages)!".format(len(pages)))
 
     def _construct_pages(self):
@@ -100,57 +100,51 @@ class PDFPage(BasePDFPage):
     pdfminer implementation of PDFPage
     """
 
-    item_type_map = {
-        "LTPage": BasePDFPage.BoxPage,
-        "LTTextLineHorizontal": BasePDFPage.BoxLine,
-        # "TODO(pwaller)": BasePDFPage.BoxWord
-        "LTChar": BasePDFPage.BoxGlyph,
-    }
-
     def __init__(self, parent_pdf_document, page):
         assert isinstance(page, pdfminer.pdfparser.PDFPage), page.__class__
 
         self.pdf_document = parent_pdf_document
         self._page = page
-        self._lt_page = None
+        self._cached_lt_page = None
 
     @property
     def size(self):
-        x0, y0, x1, y1 = self._page.mediabox
-        return x1 - x0, y1 - y0
+        x1, y1, x2, y2 = self._page.mediabox
+        return x2 - x1, y2 - y1
 
-    def get_boxes(self, box_types):
+    def get_glyphs(self):
         """
-        Obtain a list of bounding boxes for objects on the page.
-
-        box_types can be used to specify which objects to retrieve or None
-        indicates that bounding boxes of all available types will be obtained.
+        Return a BoxList of the glyphs on this page.
         """
 
-        items = children(self.lt_page())
-
-        if box_types is None:
-            return BoxList(Box(obj) for obj in items)
+        items = children(self._lt_page())
 
         def keep(o):
-            cn = o.__class__.__name__
-            if cn in self.item_type_map:
-                return self.item_type_map[cn] in box_types
-            return False
+            return isinstance(o, pdfminer.layout.LTChar)
+
+        _, page_height = self.size
 
         def make_box(obj):
-            # TODO: Invert y coordinates
-            return Box(obj)
+            # TODO(pwaller): Note: is `self._page.rotate` taken into account?
+
+            # pdfminer gives coordinates such that y=0 is the bottom of the
+            # page. Our algorithms expect y=0 is the top of the page, so..
+            left, bottom, right, top = obj.bbox
+            return Box(Rectangle(
+                x1=left, x2=right,
+                y1=page_height - top,
+                y2=page_height - bottom,
+            ))
 
         return BoxList(make_box(obj) for obj in items if keep(obj))
 
-    def lt_page(self):
-        if not self._lt_page:
+    def _lt_page(self):
+        if not self._cached_lt_page:
             self._parse_page()
-        return self._lt_page
+        return self._cached_lt_page
 
     def _parse_page(self):
         self.pdf_document._interpreter.process_page(self._page)
-        self._lt_page = self.pdf_document._device.get_result()
-        assert isinstance(self._lt_page, pdfminer.layout.LTPage), (
-            self._lt_page.__class__)
+        self._cached_lt_page = self.pdf_document._device.get_result()
+        assert isinstance(self._cached_lt_page, pdfminer.layout.LTPage), (
+            self._cached_lt_page.__class__)

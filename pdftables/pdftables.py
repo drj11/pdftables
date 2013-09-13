@@ -347,14 +347,24 @@ class Table(object):
     """
 
     def __init__(self):
+        self.bounding_box = None
+        self.glyphs = None
+        self.edges = None
+        self.row_edges = None
+        self.column_edges = None
+        self.data = None
         return
 
     def __repr__(self):
         d = self.data
-        # TODO(pwaller): Compute this in a better way.
-        h = len(d)
-        w = len(d[0])
-        return "<Table (w, h)=({0}, {1})>".format(w, h)
+        if d is not None:
+            # TODO(pwaller): Compute this in a better way.
+            h = len(d)
+            w = len(d[0])
+            return "<Table (w, h)=({0}, {1})>".format(w, h)
+        else:
+            return "<Table [empty]>"
+
 
 
 class TableContainer(object):
@@ -405,6 +415,7 @@ def page_to_tables(pdf_page, config=None):
 
     for box in tables.bounding_boxes:
         table = Table()
+        table.bounding_box = box
         table.glyphs = tables.all_glyphs.inside(box)
         edges = compute_edges(table.glyphs, box, config)
         table.row_edges, table.column_edges = edges

@@ -48,10 +48,13 @@ def render_pdf(pdf_filename):
         doc = PDFDocument.from_fileobj(fd)
 
         for page_number, page in enumerate(doc.get_pages()):
-            svg_file = 'svgs/{0}_{1}.svg'.format(
+            svg_file = 'svgs/{0}_{1:02d}.svg'.format(
                 basename(pdf_filename), page_number)
-            png_file = 'pngs/{0}_{1}.png'.format(
+            png_file = 'pngs/{0}_{1:02d}.png'.format(
                 basename(pdf_filename), page_number)
+
+            print "Rendered", svg_file, png_file
+
             table_container = page_to_tables(page)
             annotations = make_annotations(table_container)
 

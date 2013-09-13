@@ -1,8 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-# ScraperWiki Limited
-# Ian Hopkinson, 2013-06-04
 
 from __future__ import unicode_literals
 """
@@ -17,38 +12,25 @@ http://denis.papathanasiou.org/2010/08/04/extracting-text-images-from-pdf-files
 # TODO Handle argentina_diputados_voting_record.pdf automatically
 # TODO Handle multiple tables on one page
 
-# TODO(pwaller/paulfurley) Specify our public interface here
-# (and hide everything else)
-# __all__ = ["get_tables"]
+__all__ = ["get_tables"]
 
-import sys
 import codecs
+import collections
+import math
+import sys
 
+import numpy_subset
+
+from counter import Counter
+from cStringIO import StringIO
+from operator import attrgetter
+
+from boxes import Box, BoxList, Rectangle
 from pdf_document import PDFDocument, PDFPage
 from config_parameters import ConfigParameters
 
-import collections
-
-from boxes import Box, BoxList, Rectangle
-from cStringIO import StringIO
-import math
-import numpy_subset
-from counter import Counter
-from operator import attrgetter
-
 IS_TABLE_COLUMN_COUNT_THRESHOLD = 3
 IS_TABLE_ROW_COUNT_THRESHOLD = 3
-
-
-class Table(list):
-
-    def __init__(self, content, page, page_total, table_index,
-                 table_index_total):
-        super(Table, self).__init__(content)
-        self.page_number = page
-        self.total_pages = page_total
-        self.table_number_on_page = table_index
-        self.total_tables_on_page = table_index_total
 
 LEFT = 0
 TOP = 3
@@ -70,22 +52,22 @@ def get_tables_from_document(pdf_document):
     Return a list of 'tables' from the given PDFDocument, where a table is a
     list of rows, and a row is a list of strings.
     """
+    raise NotImplementedError("This interface hasn't been fixed yet, sorry!")
 
     result = []
 
+    config = ConfigParameters(extend_y=True)
+
+    # TODO(pwaller): Return one table container with all tables on it?
+
     for i, pdf_page in enumerate(pdf_document.get_pages()):
-        #print("Trying page {}".format(i + 1))
         if not page_contains_tables(pdf_page):
-            #print("Skipping page {}: no tables.".format(i + 1))
             continue
 
-        (table, _) = page_to_tables(
-            pdf_page,
-            ConfigParameters(
-                extend_y=True,
-                atomise=True))
-        crop_table(table)
-        result.append(Table(table, i + 1, len(pdf_document), 1, 1))
+        tables = page_to_tables(pdf_page, config)
+
+        # crop_table(table)
+        #result.append(Table(table, i + 1, len(pdf_document), 1, 1))
 
     return result
 
@@ -93,6 +75,8 @@ def get_tables_from_document(pdf_document):
 def crop_table(table):
     """
     Remove empty rows from the top and bottom of the table.
+
+    TODO(pwaller): We may need functionality similar to this, or not?
     """
     for row in list(table):  # top -> bottom
         if not any(cell.strip() for cell in row):
@@ -100,7 +84,6 @@ def crop_table(table):
         else:
             break
 
-    # TODO(pwaller): wtf?
     for row in list(reversed(table)):  # bottom -> top
         if not any(cell.strip() for cell in row):
             table.remove(row)
@@ -328,18 +311,6 @@ def project_boxes(box_list, orientation, erosion=0):
     return Counter(projection)
 
 
-def get_pdf_page(fh, pagenumber):
-    pdf = PDFDocument.from_fileobj(fh)
-    return pdf.get_pages()[pagenumber - 1]
-
-
-def rounder(val, tol):
-    """
-    Utility function to round numbers to arbitrary tolerance
-    """
-    return round((1.0 * val) / tol) * tol
-
-
 class Table(object):
 
     """
@@ -347,13 +318,14 @@ class Table(object):
     """
 
     def __init__(self):
+        # TODO(pwaller): populate this from pdf_page.number
+        self.page_number = None
         self.bounding_box = None
         self.glyphs = None
         self.edges = None
         self.row_edges = None
         self.column_edges = None
         self.data = None
-        return
 
     def __repr__(self):
         d = self.data
@@ -469,8 +441,6 @@ def compute_cell_edges(box_list, bounds, config):
     # Extend y_comb to page size if extend_y is true
     if config.extend_y:
         y_comb = comb_extend(y_comb, bounds.top, bounds.bottom)
-        # is drj commenting this out correct?
-        # filtered_box_list = box_list
 
     return x_comb, y_comb
 
@@ -495,6 +465,10 @@ def find_table_bounding_box(box_list, table_top_hint, table_bottom_hint):
     Returns one bounding box (minx, maxx, miny, maxy) for tables based
     on a boxlist
     """
+
+    # TODO(pwaller): These closures are here to make it clear how these things
+    #                belong together. At some point it may get broken apart
+    #                again, or simplified.
 
     def threshold_y():
         """
@@ -551,19 +525,6 @@ def find_table_bounding_box(box_list, table_top_hint, table_bottom_hint):
     return bounds.clip(threshold_bounds, hinted_bounds)
 
 
-def filter_box_list_by_position(box_list, minv, maxv, dir_fun):
-    # TODO This should be in tree.py
-    filtered_box_list = BoxList()
-    # print minv, maxv, index
-    for box in box_list:
-        # box = boxstruct[0]
-        if dir_fun(box) >= minv and dir_fun(box) <= maxv:
-            # print box
-            filtered_box_list.append(box)
-
-    return filtered_box_list
-
-
 def calculate_modal_height(box_list):
     height_list = []
     for box in box_list:
@@ -571,24 +532,3 @@ def calculate_modal_height(box_list):
 
     modal_height = Counter(height_list).most_common(1)
     return modal_height[0][0]
-
-
-def file_handle_from_url(URL):
-    import requests
-    # TODO: move this function to a helper library
-    response = requests.get(URL)
-    fh = StringIO(response.content)
-    return fh
-
-
-if __name__ == '__main__':
-    sys.stdout = codecs.getwriter('utf-8')(sys.stdout)
-    if len(sys.argv) > 1:
-        from display import to_string
-        with open(sys.argv[1], 'rb') as f:
-            tables = get_tables(f)
-            for i, table in enumerate(tables):
-                print("---- TABLE {} ----".format(i + 1))
-                print(to_string(table))
-    else:
-        print("Usage: {} <file.pdf>".format(sys.argv[0]))

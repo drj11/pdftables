@@ -8,7 +8,7 @@ import cairo
 from os.path import abspath
 
 Point = namedtuple('Point', ['x', 'y'])
-Line = namedtuple('Line', ['orientation', 'edge'])
+Line = namedtuple('Line', ['start', 'end'])
 Rectangle = namedtuple('Rectangle', ['top_left', 'bottom_right'])
 Annotation = namedtuple('Annotation', ['name', 'colour', 'shapes'])
 Colour = namedtuple('Colour', ['red', 'green', 'blue'])
@@ -20,7 +20,8 @@ __all__ = [
 
 
 def draw_line(context, line):
-    raise NotImplementedError()
+    context.move_to(line.start.x, line.start.y)
+    context.line_to(line.end.x, line.end.y)
 
 
 def draw_rectangle(context, rectangle):
@@ -79,9 +80,8 @@ class CairoPdfPageRenderer(object):
         self._surface.finish()
 
 
-def render_page(pdf_filename, page_number,
-                              annotations, svg_file=None,
-                              png_file=None):
+def render_page(pdf_filename, page_number, annotations, svg_file=None,
+                png_file=None):
     """
     Render a single page of a pdf with graphical annotations added.
 
@@ -119,42 +119,48 @@ def make_annotations(table_container):
     annotations.append(
         Annotation(
             name='table_bounding_boxes',
-            colour=(1, 0, 0),
+            colour=Colour(1, 0, 0),
             shapes=convert_rectangles(table_container.bounding_boxes)))
 
     annotations.append(
         Annotation(
             name='all_glyphs',
-            colour=(0, 1, 0),
+            colour=Colour(0, 1, 0),
             shapes=convert_rectangles(table_container.all_glyphs)))
 
     for table in table_container:
-        annotations.append(
-            Annotation(
-                name='row_edges',
-                colour=(0, 0, 1),
-                shapes=convert_horizontal_lines(table.row_edges)))
+        annotation = Annotation(
+            name='row_edges',
+            colour=Colour(0, 0, 1),
+            shapes=convert_horizontal_lines(
+                table.row_edges, table.bounding_box))
+        print(annotation)
+        annotations.append(annotation)
 
         annotations.extend(
             Annotation(
                 name='column_edges',
-                colour=(0, 0, 1),
-                shapes=convert_vertical_lines(table.column_edges)))
+                colour=Colour(0, 0, 1),
+                shapes=convert_vertical_lines(
+                    table.column_edges, table.bounding_box)))
 
     return annotations
 
 
 def convert_rectangles(boxes):
-    return [Rectangle(Point(b.left, b.top), Point(b.bottom, b.right)) for b
-            in boxes]
+    return [Rectangle(Point(b.left, b.top), Point(b.right, b.bottom))
+            for b in boxes]
 
 
-def convert_horizontal_lines(edges):
-    return [Line('horizontal', edge) for edge in edges]
+def convert_horizontal_lines(y_edges, bbox):
+    return [Line(Point(bbox.left, y), Point(bbox.right, y))
+            for y in y_edges]
 
 
-def convert_vertical_lines(edges):
-    return [Line('vertical', edge) for edge in edges]
+def convert_vertical_lines(x_edges, bbox):
+    return [Line(Point(x, bbox.top), Point(x, bbox.bottom))
+            for x in x_edges]
+
 if __name__ == '__main__':
     annotations = [
         Annotation(

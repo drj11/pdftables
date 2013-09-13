@@ -71,12 +71,12 @@ class PDFDocument(BasePDFDocument):
 
     def get_page(self, page_number):
         """
-        1-based page getter
+        0-based page getter
         """
         pages = self.get_pages()
-        if 1 <= page_number <= len(pages):
-            return pages[page_number - 1]
-        raise IndexError("Invalid page. Reminder: get_page() is 1-indexed "
+        if 0 <= page_number < len(pages):
+            return pages[page_number]
+        raise IndexError("Invalid page. Reminder: get_page() is 0-indexed "
                          "(there are {0} pages)!".format(len(pages)))
 
     def _construct_pages(self):

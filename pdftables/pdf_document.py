@@ -56,7 +56,7 @@ class PDFDocument(object):
     @abc.abstractmethod
     def get_page(self, number):
         """
-        Return a PDFPage for page `number` (1 indexed!)
+        Return a PDFPage for page `number` (0 indexed!)
         """
 
 

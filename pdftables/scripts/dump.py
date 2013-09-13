@@ -36,5 +36,5 @@ def main():
 def check(path):
     fileobj = open(path, 'rb')
     doc = PDFDocument.from_fileobj(fileobj)
-    tables = pdftables.page_to_tables(doc.get_page(1))
+    tables = pdftables.page_to_tables(doc.get_page(0))
     print tables

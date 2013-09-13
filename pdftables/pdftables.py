@@ -387,7 +387,11 @@ class TableContainer(object):
 
 def page_to_tables(pdf_page, config=None):
     """
-    Get a rectangular list of list of strings from one page of a document
+    The central algorithm to pdftables, find all the tables on ``pdf_page`` and
+    return them in a ```TableContainer``.
+
+    The algorithm is steered with ``config`` which is of type
+    ``ConfigParameters``
     """
 
     # Avoid local variables; instead use properties of the
@@ -406,21 +410,28 @@ def page_to_tables(pdf_page, config=None):
     for box in tables.bounding_boxes:
         table = Table()
         table.bounding_box = box
+
         table.glyphs = tables.all_glyphs.inside(box)
-        edges = compute_edges(table.glyphs, box, config)
+
+        edges = compute_cell_edges(table.glyphs, box, config)
         (table.column_edges, table.row_edges) = edges
+
         table.data = compute_table_data(table)
+
         tables.add(table)
 
     return tables
 
 
 def find_bounding_boxes(pdf_page, config):
-    """Returns a list of bounding boxes."""
+    """
+    Returns a list of bounding boxes, one per table.
+    """
 
     box_list = pdf_page.get_glyphs()
-    bbox = find_table_bounding_box(
-        box_list, config.table_top_hint, config.table_bottom_hint)
+
+    th, bh = config.table_top_hint, config.table_bottom_hint
+    bbox = find_table_bounding_box(box_list, th, bh)
 
     if bbox is Box.empty_box:
         return []
@@ -428,7 +439,7 @@ def find_bounding_boxes(pdf_page, config):
     return [bbox]
 
 
-def compute_edges(box_list, bounds, config):
+def compute_cell_edges(box_list, bounds, config):
     """
     Determines edges of cell content horizontally and vertically. It
     works by binning and thresholding the resulting histogram for

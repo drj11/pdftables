@@ -22,6 +22,7 @@ __all__ = [
 def draw_line(context, line):
     context.move_to(line.start.x, line.start.y)
     context.line_to(line.end.x, line.end.y)
+    context.stroke()
 
 
 def draw_rectangle(context, rectangle):
@@ -90,8 +91,10 @@ def render_page(pdf_filename, page_number, annotations, svg_file=None,
     page = extract_pdf_page(pdf_filename, page_number)
 
     renderer = CairoPdfPageRenderer(page, svg_file, png_file)
-
     for annotation in annotations:
+        assert isinstance(annotation, Annotation), (
+            "annotations: {0}, annotation: {1}".format(
+                annotations, annotation))
         for shape in annotation.shapes:
             renderer.draw(shape, annotation.colour)
 
@@ -129,15 +132,14 @@ def make_annotations(table_container):
             shapes=convert_rectangles(table_container.all_glyphs)))
 
     for table in table_container:
-        annotation = Annotation(
-            name='row_edges',
-            colour=Colour(0, 0, 1),
-            shapes=convert_horizontal_lines(
-                table.row_edges, table.bounding_box))
-        print(annotation)
-        annotations.append(annotation)
+        annotations.append(
+            Annotation(
+                name='row_edges',
+                colour=Colour(0, 0, 1),
+                shapes=convert_horizontal_lines(
+                    table.row_edges, table.bounding_box)))
 
-        annotations.extend(
+        annotations.append(
             Annotation(
                 name='column_edges',
                 colour=Colour(0, 0, 1),

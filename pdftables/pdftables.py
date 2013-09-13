@@ -34,6 +34,7 @@ from cStringIO import StringIO
 import math
 import numpy_subset
 from counter import Counter
+from operator import attrgetter
 
 IS_TABLE_COLUMN_COUNT_THRESHOLD = 3
 IS_TABLE_ROW_COUNT_THRESHOLD = 3
@@ -114,7 +115,8 @@ def page_contains_tables(pdf_page):
 
     box_list = pdf_page.get_boxes(set((PDFPage.BoxPage, PDFPage.BoxLine)))
 
-    yhist = box_list.histogram(Box._top).rounder(1)
+    boxtop = attrgetter("top")
+    yhist = box_list.histogram(boxtop).rounder(1)
     test = [k for k, v in yhist.items() if v > IS_TABLE_COLUMN_COUNT_THRESHOLD]
     return len(test) > IS_TABLE_ROW_COUNT_THRESHOLD
 
@@ -286,7 +288,6 @@ def comb_extend(comb, minv, maxv):
         comb.extend(list(numpy_subset.arange(minc, minv, -rowSpacing))[1:])
         comb.reverse()
 
-
     # Extend maximum
     if maxv > maxc:
         comb.extend(list(numpy_subset.arange(maxc, maxv, rowSpacing))[1:])
@@ -332,25 +333,45 @@ def get_pdf_page(fh, pagenumber):
     return pdf.get_pages()[pagenumber - 1]
 
 
-
 def rounder(val, tol):
     """
     Utility function to round numbers to arbitrary tolerance
     """
     return round((1.0 * val) / tol) * tol
 
+
 class Table(object):
+
     """
     Represents a single table on a PDF page.
     """
 
+    def __init__(self):
+        return
+
+    def __repr__(self):
+        d = self.data
+        # TODO(pwaller): Compute this in a better way.
+        h = len(d)
+        w = len(d[0])
+        return "<Table (w, h)=({0}, {1})>".format(w, h)
+
+
 class TableContainer(object):
+
     """
     Represents a collection of tables on a PDF page.
     """
 
+    def __init__(self):
+        self.tables = []
+
+    def add(self, table):
+        self.tables.append(table)
+
     def __repr__(self):
         return "TableContainer(" + repr(self.__dict__) + ")"
+
 
 def page_to_tables(pdf_page, config=None):
     """
@@ -375,17 +396,18 @@ def page_to_tables(pdf_page, config=None):
         first = tables.all_glyphs[0]
         if first.top > first.bottom:
             print "flipping"
-            flipped = BoxList(Box(((box.left, box.bottom, box.right, box.top), None, None)) for box in tables.all_glyphs)
+            flipped = BoxList(Box(((box.left, box.bottom, box.right, box.top), None, None))
+                              for box in tables.all_glyphs)
             tables.all_glyphs = flipped
 
     for box in tables.bounding_boxes:
         table = Table()
         table.glyphs = tables.all_glyphs.inside(box)
-        edges = compute_edges(table.glyphs, box)
+        edges = compute_edges(table.glyphs, box, config)
         table.row_edges, table.column_edges = edges
         table.data = compute_table_data(table)
         tables.add(table)
-        
+
     return tables
 
 
@@ -402,7 +424,7 @@ def find_bounding_boxes(pdf_page, config):
     return [bbox]
 
 
-def compute_edges(box_list, bounds):
+def compute_edges(box_list, bounds, config):
     """
     Determines edges of cell content horizontally and vertically. It
     works by binning and thresholding the resulting histogram for
@@ -437,6 +459,7 @@ def compute_edges(box_list, bounds):
 
     return x_comb, y_comb
 
+
 def compute_table_data(table):
     """
     Compute the final table data and return a list of lists.
@@ -446,7 +469,7 @@ def compute_table_data(table):
     """
 
     # Applying the combs
-    table_array = apply_combs(tables.glyphs, table.column_edges, table.row_edges)
+    table_array = apply_combs(table.glyphs, table.column_edges, table.row_edges)
 
     return table_array
 
@@ -462,8 +485,11 @@ def find_table_bounding_box(box_list, table_top_hint, table_bottom_hint):
         Try to reduce the y range with a threshold.
         """
 
-        yhisttop = box_list.histogram(Box._top).rounder(2)
-        yhistbottom = box_list.histogram(Box._bottom).rounder(2)
+        boxtop = attrgetter("top")
+        boxbottom = attrgetter("bottom")
+
+        yhisttop = box_list.histogram(boxtop).rounder(2)
+        yhistbottom = box_list.histogram(boxbottom).rounder(2)
 
         try:
             miny = min(
@@ -496,6 +522,7 @@ def find_table_bounding_box(box_list, table_top_hint, table_bottom_hint):
     hinted_bounds = hints_y()
 
     return bounds.clip(threshold_bounds).clip(hinted_bounds)
+
 
 def filter_box_list_by_position(box_list, minv, maxv, dir_fun):
     # TODO This should be in tree.py

@@ -28,8 +28,10 @@ class Histogram(Counter):
 
 
 class Box(object):
-    
+
     def __init__(self, obj):
+        # TODO(pwaller): simplify and reconcile this constructor
+
         if type(obj) == tuple:
             (self.bbox, self.classname, self.text) = obj
         else:
@@ -43,20 +45,22 @@ class Box(object):
             except:
                 self.text = ''
 
-        (self.left, self.bottom, self.right, self.top) = self.bbox
-        self.midline = (self.top + self.bottom) / 2.0
-        self.centreline = (self.left + self.right) / 2.0
-        self.width = self.right - self.left
+    def __repr__(self):
+        if self is Box.empty_box:
+            return "<Box rect=empty>"
+        return "<Box rect={0}>".format(self.bbox)
 
-    def clip(self, box):
-        x0 = max(self.left, box.left)
-        x1 = min(self.right, box.right)
-        y0 = max(self.top, box.top)
-        y1 = min(self.bottom, self.bottom)
+    def clip(self, rhs):
+        x0 = max(self.left, rhs.left)
+        x1 = min(self.right, rhs.right)
+        y0 = max(self.top, rhs.top)
+        y1 = min(self.bottom, rhs.bottom)
 
         if x0 > x1 or y0 > y1:
+            # There is no rect left, so return the "empty set"
             return Box.empty_box
-        return type(self)(((x0, y0, x1, y0), None, None))
+
+        return type(self)(((x0, y0, x1, y1), None, None))
 
     def __getitem__(self, i):
         """backwards-compatibility helper, don't use it!"""
@@ -66,23 +70,29 @@ class Box(object):
 
         return [self.bbox, self.classname, self.text][i]
 
-    def _left(self):
+    @property
+    def left(self):
         return self.bbox[0]
 
-    def _bottom(self):
+    @property
+    def top(self):
         return self.bbox[1]
 
-    def _right(self):
+    @property
+    def right(self):
         return self.bbox[2]
 
-    def _top(self):
+    @property
+    def bottom(self):
         return self.bbox[3]
 
-    def _midline(self):
-        return self.midline
+    @property
+    def midline(self):
+        return (self.right - self.left) / 2.
 
-    def _centreline(self):
-        return self.centreline
+    @property
+    def centreline(self):
+        return (self.bottom - self.top) / 2.
 
 """
 The empty box. This is necessary because we get one
@@ -99,7 +109,7 @@ Box.empty_box = Box(((float("+inf"), float("+inf"),
 
 
 class BoxList(list):
-   
+
     def inside(self, rect):
         """
         Return a fresh instance that is the subset that is (strictly)
@@ -109,7 +119,7 @@ class BoxList(list):
         def is_in_rect(box):
             return (rect.left <= box.left <= box.right <= rect.right and
                     rect.top <= box.top <= box.bottom <= rect.bottom)
-          
+
         return type(self)(box for box in self if is_in_rect(box))
 
     def bounds(self):

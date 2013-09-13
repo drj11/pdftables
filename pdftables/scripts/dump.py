@@ -1,16 +1,16 @@
 """pdftables-dump: obtain pdftables debugging information from pdfs
 
 Usage:
-  pdftables-dump [options] [--] (<pdfpath>[:page])...
-  pdftables-dump (-h | --help)
-  pdftables-dump --version
-  pdftables-dump --check <pdfpath>
+    pdftables-render [options] [--] (<pdfpath>[:page])...
+    pdftables-render (-h | --help)
+    pdftables-render --version
+    pdftables-render --check <pdfpath>
 
 Options:
-  -h --help     Show this screen.
-  --version     Show version.
-  -D --debug 		Additional debug information
-  -O --output-dir=<path> 	Path to write debug data to
+    -h --help     Show this screen.
+    --version     Show version.
+    -D --debug 		Additional debug information
+    -O --output-dir=<path> 	Path to write debug data to
 """
 
 import pdftables
@@ -27,6 +27,7 @@ def main():
 
     if arguments["--check"]:
         return check(arguments["<pdfpath>"][0])
+
 
     for pdfpath in arguments["<pdfpath>"]:
         with open(pdfpath, "rb") as fd:

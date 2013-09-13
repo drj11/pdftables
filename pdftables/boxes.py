@@ -7,7 +7,7 @@ Describe box-like data (such as glyphs and rects) in a PDF and helper functions
 
 from __future__ import unicode_literals
 
-import collections
+from collections import namedtuple
 from counter import Counter
 
 
@@ -27,18 +27,29 @@ class Histogram(Counter):
         return c
 
 
+Rectangle = namedtuple("Rectangle", "x1 y1 x2 y2")
+
+
 class Box(object):
 
-    def __init__(self, obj):
+    def __init__(self, rect, text=None):
+
+        if not isinstance(rect, Rectangle):
+            raise RuntimeError("Box(x) expects isinstance(x, Rectangle)")
+
+        self.rect = rect
+        self.text = text
+
+        return
         # TODO(pwaller): simplify and reconcile this constructor
 
         if type(obj) == tuple:
-            (self.bbox, self.classname, self.text) = obj
+            (self.rect, self.classname, self.text) = obj
         else:
             if obj.__class__.__name__ != 'LTAnon':
-                self.bbox = obj.bbox
+                self.rect = obj.rect
             else:
-                self.bbox = (0, 0, 0, 0)
+                self.rect = (0, 0, 0, 0)
             self.classname = obj.__class__.__name__
             try:
                 self.text = obj.get_text()
@@ -48,7 +59,7 @@ class Box(object):
     def __repr__(self):
         if self is Box.empty_box:
             return "<Box rect=empty>"
-        return "<Box rect={0}>".format(self.bbox)
+        return "<Box rect={0}>".format(self.rect)
 
     def clip(self, *rectangles):
         """
@@ -57,7 +68,7 @@ class Box(object):
         returned which always clips to the empty box.
         """
 
-        x1, y1, x2, y2 = self.bbox
+        x1, y1, x2, y2 = self.rect
         for rectangle in rectangles:
             x1 = max(x1, rectangle.left)
             x2 = min(x2, rectangle.right)
@@ -68,31 +79,23 @@ class Box(object):
                 # There is no rect left, so return the "empty set"
                 return Box.empty_box
 
-        return type(self)(((x1, y1, x2, y2), None, None))
-
-    def __getitem__(self, i):
-        """backwards-compatibility helper, don't use it!"""
-        error = ("DEPRECATED: don't use box[x] - use these instead: "
-                 "[0]: bbox, [1]: classname, [2]: text")
-        raise RuntimeError(error)
-
-        return [self.bbox, self.classname, self.text][i]
+        return type(self)(Rectangle(x1=x1, y1=y1, x2=x2, y2=y2))
 
     @property
     def left(self):
-        return self.bbox[0]
+        return self.rect[0]
 
     @property
     def top(self):
-        return self.bbox[1]
+        return self.rect[1]
 
     @property
     def right(self):
-        return self.bbox[2]
+        return self.rect[2]
 
     @property
     def bottom(self):
-        return self.bbox[3]
+        return self.rect[3]
 
     @property
     def midline(self):
@@ -101,6 +104,14 @@ class Box(object):
     @property
     def centreline(self):
         return (self.bottom - self.top) / 2.
+
+    @property
+    def width(self):
+        return self.right - self.left
+
+    @property
+    def height(self):
+        return self.bottom - self.top
 
 """
 The empty box. This is necessary because we get one
@@ -112,8 +123,8 @@ at +Inf, bottom at -Inf.
 
 It is defined this way so that it is invariant under clipping.
 """
-Box.empty_box = Box(((float("+inf"), float("+inf"),
-                      float("-inf"), float("-inf")), None, None))
+Box.empty_box = Box(Rectangle(x1=float("+inf"), y1=float("+inf"),
+                              x2=float("-inf"), y2=float("-inf")))
 
 
 class BoxList(list):
@@ -132,12 +143,12 @@ class BoxList(list):
 
     def bounds(self):
         """Return the (strictest) bounding box of all elements."""
-        miny = min(box.top for box in self)
-        maxy = max(box.bottom for box in self)
-        minx = min(box.left for box in self)
-        maxx = max(box.right for box in self)
-
-        return Box(((minx, miny, maxx, maxy), None, None))
+        return Box(Rectangle(
+            x1=min(box.left for box in self),
+            y1=min(box.top for box in self),
+            x2=max(box.right for box in self),
+            y2=max(box.bottom for box in self),
+        ))
 
     def __repr__(self):
         return "BoxList(len={0})".format(len(self))

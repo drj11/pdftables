@@ -29,7 +29,7 @@ from config_parameters import ConfigParameters
 
 import collections
 
-from boxes import Box, BoxList
+from boxes import Box, BoxList, Rectangle
 from cStringIO import StringIO
 import math
 import numpy_subset
@@ -302,16 +302,16 @@ def project_boxes(box_list, orientation, erosion=0):
     Take a set of boxes and project their extent onto an axis
     """
     if orientation == "column":
-        upper = RIGHT
-        lower = LEFT
+        first = attrgetter("left")
+        second = attrgetter("right")
     elif orientation == "row":
-        upper = TOP
-        lower = BOTTOM
+        first = attrgetter("top")
+        second = attrgetter("bottom")
 
     projection = {}
-    minv = round(min([box.bbox[lower]
-                 for box in box_list])) - 2  # ensure some overlap
-    maxv = round(max([box.bbox[upper] for box in box_list])) + 2
+    # ensure some overlap
+    minv = round(min([first(box) for box in box_list])) - 2
+    maxv = round(max([second(box) for box in box_list])) + 2
 
     # Initialise projection structure
     # print minv, maxv
@@ -320,8 +320,8 @@ def project_boxes(box_list, orientation, erosion=0):
 
     # print projection
     for box in box_list:
-        for i in range(int(round(box.bbox[lower])) + erosion,
-                       int(round(box.bbox[upper])) - erosion):
+        for i in range(int(round(first(box))) + erosion,
+                       int(round(second(box))) - erosion):
             # projection[i] += 1
             projection.append(i)
 
@@ -418,7 +418,7 @@ def page_to_tables(pdf_page, config=None):
 def find_bounding_boxes(pdf_page, config):
     """Returns a list of bounding boxes."""
 
-    box_list = pdf_page.get_glyphs().purge_empty_text()
+    box_list = pdf_page.get_glyphs()
     bbox = find_table_bounding_box(
         box_list, config.table_top_hint, config.table_bottom_hint)
 
@@ -474,7 +474,7 @@ def compute_table_data(table):
 
     # Applying the combs
     table_array = apply_combs(
-        table.glyphs, table._column_edges, table._row_edges)
+        table.glyphs, table.column_edges, table.row_edges)
 
     return table_array
 
@@ -508,7 +508,12 @@ def find_table_bounding_box(box_list, table_top_hint, table_bottom_hint):
             maxy = None
             #raise ValueError("table_threshold caught nothing")
 
-        return Box(((float("-inf"), miny, float("+inf"), maxy), None, None))
+        return Box(Rectangle(
+            x1=float("-inf"),
+            y1=miny,
+            x2=float("+inf"),
+            y2=maxy,
+        ))
 
     def hints_y():
         miny = float("-inf")
@@ -521,7 +526,12 @@ def find_table_bounding_box(box_list, table_top_hint, table_bottom_hint):
             bottomBox = [box for box in box_list if bottom_string in box.text]
             if bottomBox:
                 maxy = bottomBox[0].bottom
-        return Box(((float("-inf"), miny, float("+inf"), maxy), None, None))
+        return Box(Rectangle(
+            x1=float("-inf"),
+            y1=miny,
+            x2=float("+inf"),
+            y2=maxy,
+        ))
 
     bounds = box_list.bounds()
     threshold_bounds = threshold_y()
@@ -546,7 +556,7 @@ def filter_box_list_by_position(box_list, minv, maxv, dir_fun):
 def calculate_modal_height(box_list):
     height_list = []
     for box in box_list:
-        height_list.append(round(box.bbox[TOP] - box.bbox[BOTTOM]))
+        height_list.append(round(box.bottom - box.top))
 
     modal_height = Counter(height_list).most_common(1)
     return modal_height[0][0]

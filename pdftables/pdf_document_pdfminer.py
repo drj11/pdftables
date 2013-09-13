@@ -16,7 +16,7 @@ from .pdf_document import (
     PDFPage as BasePDFPage,
 )
 
-from .boxes import Box, BoxList
+from .boxes import Box, BoxList, Rectangle
 
 
 class PDFDocument(BasePDFDocument):
@@ -125,10 +125,16 @@ class PDFPage(BasePDFPage):
         _, page_height = self.size
 
         def make_box(obj):
-            # TODO(pwaller): Take into account `self._page.rotate`?
-            x1, y1, x2, y2 = obj.bbox
-            bbox = x1, page_height - y1, x2, page_height - y2
-            return Box(obj)
+            # TODO(pwaller): Note: is `self._page.rotate` taken into account?
+
+            # pdfminer gives coordinates such that y=0 is the bottom of the
+            # page. Our algorithms expect y=0 is the top of the page, so..
+            left, bottom, right, top = obj.bbox
+            return Box(Rectangle(
+                x1=left, x2=right,
+                y1=page_height - top,
+                y2=page_height - bottom,
+            ))
 
         return BoxList(make_box(obj) for obj in items if keep(obj))
 

@@ -10,7 +10,7 @@ getTablesTests
 import sys
 sys.path.append('code')
 
-from pdftables import page_to_tables, TableDiagnosticData
+from pdftables import page_to_tables #, TableDiagnosticData
 from pdftables.config_parameters import ConfigParameters
 
 from fixtures import fixture

@@ -404,7 +404,7 @@ def page_to_tables(pdf_page, config=None):
         v = table._v_threshold_segs = above_threshold(v, 5)
 
         # Compute edges (the set of edges used to be called a 'comb')
-        edges = compute_cell_edges(table.glyphs, box, config)
+        edges = compute_cell_edges(box, h, v, config)
         (table.column_edges, table.row_edges) = edges
 
         table.data = compute_table_data(table)
@@ -431,12 +431,18 @@ def find_bounding_boxes(glyphs, config):
     return [bbox]
 
 
-def compute_cell_edges(box_list, bounds, config):
+def compute_cell_edges(box, h_segments, v_segments, config):  # box_list, bounds, config):
     """
     Determines edges of cell content horizontally and vertically. It
     works by binning and thresholding the resulting histogram for
     each of the two axes (x and y).
     """
+
+    def gap_midpoints(segments):
+
+        return [(a.end + b.start)/2 for a, b in zip(segments, segments[1:])]
+
+    return gap_midpoints(h_segments), gap_midpoints(v_segments)
 
     # Project boxes onto horizontal axis
     column_projection = project_boxes(box_list, "column")

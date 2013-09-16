@@ -77,12 +77,12 @@ class CairoPdfPageRenderer(object):
         # We render everything 3 times, moving
         # one page-width to the right each time.
         self._offset_colors = [
-          (0, white, white),
-          (width, black, white),
-          (2*width, black, black)
+          (0, white, white, True),
+          (width, black, white, True),
+          (2*width, black, black, False)
         ]
 
-        for offset, fg_color, bg_color in self._offset_colors:
+        for offset, fg_color, bg_color, render_graphics in self._offset_colors:
             # Render into context, with a different offset
             # each time.
             self._context.save()
@@ -90,6 +90,8 @@ class CairoPdfPageRenderer(object):
             sel = poppler.Rectangle()
             sel.x1 = sel.y1 = 0
             sel.x2, sel.y2 = pdf_page.get_size()
+            if render_graphics:
+                pdf_page.render(self._context)
             pdf_page.render_selection(self._context, sel, sel, poppler.SELECTION_GLYPH, fg_color, bg_color)
             self._context.restore()
 

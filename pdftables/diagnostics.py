@@ -109,9 +109,8 @@ def render_page(pdf_filename, page_number, annotations, svg_file=None,
                 png_file=None):
     """
     Render a single page of a pdf with graphical annotations added.
-
-
     """
+
     page = extract_pdf_page(pdf_filename, page_number)
 
     renderer = CairoPdfPageRenderer(page, svg_file, png_file)

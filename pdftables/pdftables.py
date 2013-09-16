@@ -25,9 +25,10 @@ from counter import Counter
 from cStringIO import StringIO
 from operator import attrgetter
 
-from boxes import Box, BoxList, Rectangle
-from pdf_document import PDFDocument, PDFPage
-from config_parameters import ConfigParameters
+from .boxes import Box, BoxList, Rectangle
+from .config_parameters import ConfigParameters
+from .linesegments import segment_histogram, above_threshold
+from .pdf_document import PDFDocument, PDFPage
 
 IS_TABLE_COLUMN_COUNT_THRESHOLD = 3
 IS_TABLE_ROW_COUNT_THRESHOLD = 3
@@ -347,6 +348,11 @@ class TableContainer(object):
     def __init__(self):
         self.tables = []
 
+        self.original_page = None
+        self.page_size = None
+        self.bounding_boxes = None
+        self.all_glyphs = None
+
     def add(self, table):
         self.tables.append(table)
 
@@ -366,18 +372,19 @@ def page_to_tables(pdf_page, config=None):
     ``ConfigParameters``
     """
 
+    if config is None:
+        config = ConfigParameters()
+
     # Avoid local variables; instead use properties of the
     # `tables` object, so that they are exposed for debugging and
     # visualisation.
 
     tables = TableContainer()
 
-    if config is None:
-        config = ConfigParameters()
-
-    tables.bounding_boxes = find_bounding_boxes(pdf_page, config)
-
+    tables.original_page = pdf_page
+    tables.page_size = pdf_page.size
     tables.all_glyphs = pdf_page.get_glyphs()
+    tables.bounding_boxes = find_bounding_boxes(tables.all_glyphs, config)
 
     for box in tables.bounding_boxes:
         table = Table()
@@ -385,7 +392,19 @@ def page_to_tables(pdf_page, config=None):
 
         table.glyphs = tables.all_glyphs.inside(box)
 
-        edges = compute_cell_edges(table.glyphs, box, config)
+        # Fetch line-segments
+        table._h_segments, table._v_segments = table.glyphs.line_segments()
+
+        # Histogram them
+        h = table._h_glyph_histogram = segment_histogram(table._h_segments)
+        v = table._v_glyph_histogram = segment_histogram(table._v_segments)
+
+        # Threshold them
+        h = table._h_threshold_segs = above_threshold(h, 3)
+        v = table._v_threshold_segs = above_threshold(v, 5)
+
+        # Compute edges (the set of edges used to be called a 'comb')
+        edges = compute_cell_edges(box, h, v, config)
         (table.column_edges, table.row_edges) = edges
 
         table.data = compute_table_data(table)
@@ -395,28 +414,35 @@ def page_to_tables(pdf_page, config=None):
     return tables
 
 
-def find_bounding_boxes(pdf_page, config):
+def find_bounding_boxes(glyphs, config):
     """
     Returns a list of bounding boxes, one per table.
     """
 
-    box_list = pdf_page.get_glyphs()
+    # TODO(pwaller): One day, this function will find more than one table.
 
     th, bh = config.table_top_hint, config.table_bottom_hint
-    bbox = find_table_bounding_box(box_list, th, bh)
+    bbox = find_table_bounding_box(glyphs, th, bh)
 
     if bbox is Box.empty_box:
         return []
 
+    # Return the one table's bounding box.
     return [bbox]
 
 
-def compute_cell_edges(box_list, bounds, config):
+def compute_cell_edges(box, h_segments, v_segments, config):  # box_list, bounds, config):
     """
     Determines edges of cell content horizontally and vertically. It
     works by binning and thresholding the resulting histogram for
     each of the two axes (x and y).
     """
+
+    def gap_midpoints(segments):
+
+        return [(a.end + b.start)/2 for a, b in zip(segments, segments[1:])]
+
+    return gap_midpoints(h_segments), gap_midpoints(v_segments)
 
     # Project boxes onto horizontal axis
     column_projection = project_boxes(box_list, "column")

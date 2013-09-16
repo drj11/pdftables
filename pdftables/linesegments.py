@@ -20,8 +20,11 @@ segment_histogram
     [(1, 4), (2, 3)] => [(1, 2, 3, 4), (1, 2, 1)]
 """
 
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from heapq import heappush, heapreplace, heappop
+
+
+LineSegment = namedtuple("LineSegment", ["start", "end"])
 
 
 def segments_generator(line_segments):
@@ -119,3 +122,28 @@ def segment_histogram(line_segments):
     starts, ends = zip(*x)
 
     return starts + (ends[-1],), counts
+
+
+def above_threshold(histogram, threshold):
+    """
+    Returns a list of line segments from histogram which are above threshold
+    """
+
+    bin_edges, bin_values = histogram
+    edges = zip(bin_edges, bin_edges[1:])
+
+    above_threshold = []
+
+    for (first, second), value in zip(edges, bin_values):
+        if value < threshold:
+            continue
+
+        if above_threshold and above_threshold[-1].end == first:
+            # There's a previous one we can extend
+            above_threshold[-1] = above_threshold[-1]._replace(
+                end=second)
+        else:
+            # Insert a new one
+            above_threshold.append(LineSegment(first, second))
+
+    return above_threshold

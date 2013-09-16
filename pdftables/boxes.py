@@ -129,6 +129,16 @@ Box.empty_box = Box(Rectangle(x1=float("+inf"), y1=float("+inf"),
 
 class BoxList(list):
 
+    def line_segments(self):
+        """
+        Return line (start, end) corresponding to horizontal and vertical
+        box edges
+        """
+        horizontal = [(b.left, b.right) for b in self]
+        vertical = [(b.top, b.bottom) for b in self]
+
+        return horizontal, vertical
+
     def inside(self, rect):
         """
         Return a fresh instance that is the subset that is (strictly)

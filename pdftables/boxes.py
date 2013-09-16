@@ -134,7 +134,9 @@ class BoxList(list):
         Return line (start, end) corresponding to horizontal and vertical
         box edges
         """
-        horizontal = [(b.left, b.right) for b in self]
+        # Filter out zero width boxes, found in unica_preco_recebido.pdf
+        # TODO(pwaller,ih): Investigate the origin of zero width boxes
+        horizontal = [(b.left, b.right) for b in self if b.left != b.right]
         vertical = [(b.top, b.bottom) for b in self]
 
         return horizontal, vertical

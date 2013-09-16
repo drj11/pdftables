@@ -407,7 +407,10 @@ def page_to_tables(pdf_page, config=None):
         edges = compute_cell_edges(box, h, v, config)
         (table.column_edges, table.row_edges) = edges
 
-        table.data = compute_table_data(table)
+        if table.column_edges and table.row_edges:
+            table.data = compute_table_data(table)
+        else:
+            table.data = None
 
         tables.add(table)
 

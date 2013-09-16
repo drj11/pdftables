@@ -11,8 +11,8 @@ Point = namedtuple('Point', ['x', 'y'])
 Line = namedtuple('Line', ['start', 'end'])
 Polygon = namedtuple('Polygon', 'lines')
 Rectangle = namedtuple('Rectangle', ['top_left', 'bottom_right'])
-AnnotationGroup = namedtuple('AnnotationGroup', ['name', 'colour', 'shapes'])
-Colour = namedtuple('Colour', ['red', 'green', 'blue'])
+AnnotationGroup = namedtuple('AnnotationGroup', ['name', 'color', 'shapes'])
+Color = namedtuple('Color', ['red', 'green', 'blue'])
 
 __all__ = [
     'render_page',
@@ -57,13 +57,21 @@ RENDERERS[Polygon] = draw_polygon
 
 
 class CairoPdfPageRenderer(object):
-    def __init__(self, pdf_page, svg_filename, png_filename):
+    def __init__(self, pdf_page, svg_filename, png_filename,
+                 background_color=0, foreground_color=0):
         self._svg_filename = abspath(svg_filename)
         self._png_filename = abspath(png_filename) if png_filename else None
         self._context, self._surface = self._get_context(
             svg_filename, *pdf_page.get_size())
 
         pdf_page.render(self._context)
+
+        sel = poppler.Rectangle()
+        sel.x1 = sel.y1 = 0
+        sel.x2, sel.y2 = pdf_page.get_size()
+        color = poppler.Color()
+        color.red = color.green = color.blue = 65535
+        pdf_page.render_selection(self._context, sel, sel, poppler.SELECTION_GLYPH, color, color)
 
     @staticmethod
     def _get_context(filename, width, height):
@@ -75,17 +83,17 @@ class CairoPdfPageRenderer(object):
         context = cairo.Context(surface)
         context.scale(scale, scale)
 
-        # Set background colour to white
+        # Set background color to white
         context.set_source_rgb(1, 1, 1)
         context.paint()
 
         return context, surface
 
-    def draw(self, shape, colour):
+    def draw(self, shape, color):
         self._context.set_line_width(1)
-        self._context.set_source_rgba(colour.red,
-                                      colour.green,
-                                      colour.blue,
+        self._context.set_source_rgba(color.red,
+                                      color.green,
+                                      color.blue,
                                       0.5)
         RENDERERS[type(shape)](self._context, shape)
 
@@ -112,7 +120,7 @@ def render_page(pdf_filename, page_number, annotations, svg_file=None,
             "annotations: {0}, annotation: {1}".format(
                 annotations, annotation))
         for shape in annotation.shapes:
-            renderer.draw(shape, annotation.colour)
+            renderer.draw(shape, annotation.color)
 
     renderer.flush()
 
@@ -138,34 +146,34 @@ def make_annotations(table_container):
     annotations.append(
         AnnotationGroup(
             name='table_bounding_boxes',
-            colour=Colour(0, 0, 1),
+            color=Color(0, 0, 1),
             shapes=convert_rectangles(table_container.bounding_boxes)))
 
     annotations.append(
         AnnotationGroup(
             name='all_glyphs',
-            colour=Colour(0, 1, 0),
+            color=Color(0, 1, 0),
             shapes=convert_rectangles(table_container.all_glyphs)))
 
     for table in table_container:
         annotations.append(
             AnnotationGroup(
                 name='row_edges',
-                colour=Colour(1, 0, 0),
+                color=Color(1, 0, 0),
                 shapes=convert_horizontal_lines(
                     table.row_edges, table.bounding_box)))
 
         annotations.append(
             AnnotationGroup(
                 name='column_edges',
-                colour=Colour(1, 0, 0),
+                color=Color(1, 0, 0),
                 shapes=convert_vertical_lines(
                     table.column_edges, table.bounding_box)))
 
         annotations.append(
             AnnotationGroup(
                 name='glyph_histogram_horizontal',
-                colour=Colour(1, 0, 0),
+                color=Color(1, 0, 0),
                 shapes=make_glyph_histogram(
                     table._h_glyph_histogram, table.bounding_box,
                     direction="horizontal")))
@@ -173,7 +181,7 @@ def make_annotations(table_container):
         annotations.append(
             AnnotationGroup(
                 name='glyph_histogram_vertical',
-                colour=Colour(1, 0, 0),
+                color=Color(1, 0, 0),
                 shapes=make_glyph_histogram(
                     table._v_glyph_histogram, table.bounding_box,
                     direction="vertical")))
@@ -181,7 +189,7 @@ def make_annotations(table_container):
         annotations.append(
             AnnotationGroup(
                 name='horizontal_glyph_above_threshold',
-                colour=Colour(0, 0, 0),
+                color=Color(0, 0, 0),
                 shapes=make_thresholds(
                     table._h_threshold_segs, table.bounding_box,
                     direction="horizontal")))
@@ -189,7 +197,7 @@ def make_annotations(table_container):
         annotations.append(
             AnnotationGroup(
                 name='vertical_glyph_above_threshold',
-                colour=Colour(0, 0, 0),
+                color=Color(0, 0, 0),
                 shapes=make_thresholds(
                     table._v_threshold_segs, table.bounding_box,
                     direction="vertical")))
@@ -281,7 +289,7 @@ if __name__ == '__main__':
     annotations = [
         AnnotationGroup(
             name='',
-            colour=Colour(1, 0, 0),
+            color=Color(1, 0, 0),
             shapes=[Rectangle(Point(100, 100), Point(200, 200))])
     ]
     render_page(sys.argv[1], 0, annotations)

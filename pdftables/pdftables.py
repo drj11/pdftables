@@ -40,6 +40,57 @@ RIGHT = 2
 BOTTOM = 1
 
 
+class Table(object):
+
+    """
+    Represents a single table on a PDF page.
+    """
+
+    def __init__(self):
+        # TODO(pwaller): populate this from pdf_page.number
+        self.page_number = None
+        self.bounding_box = None
+        self.glyphs = None
+        self.edges = None
+        self.row_edges = None
+        self.column_edges = None
+        self.data = None
+
+    def __repr__(self):
+        d = self.data
+        if d is not None:
+            # TODO(pwaller): Compute this in a better way.
+            h = len(d)
+            w = len(d[0])
+            return "<Table (w, h)=({0}, {1})>".format(w, h)
+        else:
+            return "<Table [empty]>"
+
+
+class TableContainer(object):
+
+    """
+    Represents a collection of tables on a PDF page.
+    """
+
+    def __init__(self):
+        self.tables = []
+
+        self.original_page = None
+        self.page_size = None
+        self.bounding_boxes = None
+        self.all_glyphs = None
+
+    def add(self, table):
+        self.tables.append(table)
+
+    def __repr__(self):
+        return "TableContainer(" + repr(self.__dict__) + ")"
+
+    def __iter__(self):
+        return iter(self.tables)
+
+
 def get_tables(fh):
     """
     Return a list of 'tables' from the given file handle, where a table is a
@@ -133,57 +184,6 @@ def apply_combs(box_list, x_comb, y_comb):
         table_array[row][col] += box.text.rstrip('\n\r')
 
     return table_array
-
-
-class Table(object):
-
-    """
-    Represents a single table on a PDF page.
-    """
-
-    def __init__(self):
-        # TODO(pwaller): populate this from pdf_page.number
-        self.page_number = None
-        self.bounding_box = None
-        self.glyphs = None
-        self.edges = None
-        self.row_edges = None
-        self.column_edges = None
-        self.data = None
-
-    def __repr__(self):
-        d = self.data
-        if d is not None:
-            # TODO(pwaller): Compute this in a better way.
-            h = len(d)
-            w = len(d[0])
-            return "<Table (w, h)=({0}, {1})>".format(w, h)
-        else:
-            return "<Table [empty]>"
-
-
-class TableContainer(object):
-
-    """
-    Represents a collection of tables on a PDF page.
-    """
-
-    def __init__(self):
-        self.tables = []
-
-        self.original_page = None
-        self.page_size = None
-        self.bounding_boxes = None
-        self.all_glyphs = None
-
-    def add(self, table):
-        self.tables.append(table)
-
-    def __repr__(self):
-        return "TableContainer(" + repr(self.__dict__) + ")"
-
-    def __iter__(self):
-        return iter(self.tables)
 
 
 def page_to_tables(pdf_page, config=None):

@@ -1,22 +1,5 @@
 # pdftables - a library for extracting tables from PDF files
 
-## Installation
-
-You need poppler and Cairo. On a Ubuntu and friends you can go:
-
-```
-sudo apt-get -y install python-poppler python-cairo
-```
-
-Then we can install the `pip`-able requirements from the
-`requirements.txt` file:
-
-```
-pip install -r requirements.txt
-```
-
-## Overview
-
 [This post](http://blog.scraperwiki.com/2013/07/29/pdftables-a-python-library-for-getting-tables-out-of-pdf-files/) on the ScraperWiki blog describes the algorithms used in pdftables, and something of its genesis. This README gives more technical information.pdftables uses [pdfminer][1] to get information on the locations of text elements in a PDF document. pdfminer was chosen as a base because it provides information on the full range of page elements in PDF files, including graphical elements such as lines. Although the algorithms currently used do not use these elements they are planned for future work. As a purely Python library, pdfminer is very portable. The downside of pdfminer is that it is slow, perhaps an order of magnitude slower than alternative C based libraries.
 
 ## Usage ##

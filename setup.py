@@ -28,12 +28,9 @@ setup(
     zip_safe=False,
     install_requires=[
         'pdfminer>=20110515',
-        'docopt>=0.6',
     ],
     tests_require=[],
-    entry_points={
-        'console_scripts': [
-            'pdftables-render = pdftables.scripts.render:main',
-        ]
-    },
+    entry_points=\
+    """
+    """,
 )

@@ -13,7 +13,7 @@ def to_string(table):
     result = StringIO()
 
     (columns, rows) = get_dimensions(table)
-
+        
     result.write("     {} columns, {} rows\n".format(columns, rows))
     col_widths = find_column_widths(table)
     table_width = sum(col_widths) + len(col_widths) + 2

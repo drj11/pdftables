@@ -57,29 +57,50 @@ RENDERERS[Polygon] = draw_polygon
 
 
 class CairoPdfPageRenderer(object):
-    def __init__(self, pdf_page, svg_filename, png_filename,
-                 background_color=0, foreground_color=0):
+    def __init__(self, pdf_page, svg_filename, png_filename):
         self._svg_filename = abspath(svg_filename)
         self._png_filename = abspath(png_filename) if png_filename else None
         self._context, self._surface = self._get_context(
             svg_filename, *pdf_page.get_size())
 
-        pdf_page.render(self._context)
 
-        sel = poppler.Rectangle()
-        sel.x1 = sel.y1 = 0
-        sel.x2, sel.y2 = pdf_page.get_size()
-        color = poppler.Color()
-        color.red = color.green = color.blue = 65535
-        pdf_page.render_selection(self._context, sel, sel, poppler.SELECTION_GLYPH, color, color)
+        white = poppler.Color()
+        white.red = white.green = white.blue = 65535
+        black = poppler.Color()
+        black.red = black.green = black.blue = 0
+        # red = poppler.Color()
+        # red.red = red.green = red.blue = 0
+        # red.red = 65535
+
+        width = pdf_page.get_size()[0]
+
+        # We render everything 3 times, moving
+        # one page-width to the right each time.
+        self._offset_colors = [
+          (0, white, white),
+          (width, black, white),
+          (2*width, black, black)
+        ]
+
+        for offset, fg_color, bg_color in self._offset_colors:
+            # Render into context, with a different offset
+            # each time.
+            self._context.save()
+            self._context.translate(offset, 0)
+            sel = poppler.Rectangle()
+            sel.x1 = sel.y1 = 0
+            sel.x2, sel.y2 = pdf_page.get_size()
+            pdf_page.render_selection(self._context, sel, sel, poppler.SELECTION_GLYPH, fg_color, bg_color)
+            self._context.restore()
 
     @staticmethod
     def _get_context(filename, width, height):
         scale = 1
         surface = cairo.SVGSurface(
-            filename, width * scale, height * scale)
+            filename, 3 * width * scale, height * scale)
         #srf = cairo.ImageSurface(
         #          cairo.FORMAT_RGB24, int(w*scale), int(h*scale))
+
         context = cairo.Context(surface)
         context.scale(scale, scale)
 
@@ -90,12 +111,15 @@ class CairoPdfPageRenderer(object):
         return context, surface
 
     def draw(self, shape, color):
+        self._context.save()
         self._context.set_line_width(1)
         self._context.set_source_rgba(color.red,
                                       color.green,
                                       color.blue,
                                       0.5)
+        self._context.translate(self._offset_colors[1][0], 0)
         RENDERERS[type(shape)](self._context, shape)
+        self._context.restore()
 
     def flush(self):
         if self._png_filename is not None:

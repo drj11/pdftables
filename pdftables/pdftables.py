@@ -348,6 +348,11 @@ class TableContainer(object):
     def __init__(self):
         self.tables = []
 
+        self.original_page = None
+        self.page_size = None
+        self.bounding_boxes = None
+        self.all_glyphs = None
+
     def add(self, table):
         self.tables.append(table)
 
@@ -367,18 +372,19 @@ def page_to_tables(pdf_page, config=None):
     ``ConfigParameters``
     """
 
+    if config is None:
+        config = ConfigParameters()
+
     # Avoid local variables; instead use properties of the
     # `tables` object, so that they are exposed for debugging and
     # visualisation.
 
     tables = TableContainer()
 
-    if config is None:
-        config = ConfigParameters()
-
-    tables.bounding_boxes = find_bounding_boxes(pdf_page, config)
-
+    tables.original_page = pdf_page
+    tables.page_size = pdf_page.size
     tables.all_glyphs = pdf_page.get_glyphs()
+    tables.bounding_boxes = find_bounding_boxes(tables.all_glyphs, config)
 
     for box in tables.bounding_boxes:
         table = Table()
@@ -408,19 +414,20 @@ def page_to_tables(pdf_page, config=None):
     return tables
 
 
-def find_bounding_boxes(pdf_page, config):
+def find_bounding_boxes(glyphs, config):
     """
     Returns a list of bounding boxes, one per table.
     """
 
-    box_list = pdf_page.get_glyphs()
+    # TODO(pwaller): One day, this function will find more than one table.
 
     th, bh = config.table_top_hint, config.table_bottom_hint
-    bbox = find_table_bounding_box(box_list, th, bh)
+    bbox = find_table_bounding_box(glyphs, th, bh)
 
     if bbox is Box.empty_box:
         return []
 
+    # Return the one table's bounding box.
     return [bbox]
 
 

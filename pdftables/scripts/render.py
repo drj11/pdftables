@@ -53,13 +53,13 @@ def render_pdf(pdf_filename):
             png_file = 'pngs/{0}_{1:02d}.png'.format(
                 basename(pdf_filename), page_number)
 
-            print "Rendered", svg_file, png_file
-
             table_container = page_to_tables(page)
             annotations = make_annotations(table_container)
 
             render_page(
                 pdf_filename, page_number, annotations, svg_file, png_file)
+
+            print "Rendered", svg_file, png_file
 
 
 def check(path):

@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 
 import ctypes
-from poppler import *
+from poppler import document_new_from_file
 
 from ctypes import CDLL, POINTER, c_voidp, c_double, c_uint, c_bool
 from ctypes import Structure

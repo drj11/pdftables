@@ -75,6 +75,7 @@ class CairoPdfPageRenderer(object):
         context = cairo.Context(surface)
         context.scale(scale, scale)
 
+        # Set background colour to white
         context.set_source_rgb(1, 1, 1)
         context.paint()
 

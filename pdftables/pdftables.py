@@ -25,9 +25,10 @@ from counter import Counter
 from cStringIO import StringIO
 from operator import attrgetter
 
-from boxes import Box, BoxList, Rectangle
-from pdf_document import PDFDocument, PDFPage
-from config_parameters import ConfigParameters
+from .boxes import Box, BoxList, Rectangle
+from .config_parameters import ConfigParameters
+from .linesegments import segment_histogram, above_threshold
+from .pdf_document import PDFDocument, PDFPage
 
 IS_TABLE_COLUMN_COUNT_THRESHOLD = 3
 IS_TABLE_ROW_COUNT_THRESHOLD = 3
@@ -385,6 +386,18 @@ def page_to_tables(pdf_page, config=None):
 
         table.glyphs = tables.all_glyphs.inside(box)
 
+        # Fetch line-segments
+        table._h_segments, table._v_segments = table.glyphs.line_segments()
+
+        # Histogram them
+        h = table._h_glyph_histogram = segment_histogram(table._h_segments)
+        v = table._v_glyph_histogram = segment_histogram(table._v_segments)
+
+        # Threshold them
+        h = table._h_threshold_segs = above_threshold(h, 3)
+        v = table._v_threshold_segs = above_threshold(v, 5)
+
+        # Compute edges (the set of edges used to be called a 'comb')
         edges = compute_cell_edges(table.glyphs, box, config)
         (table.column_edges, table.row_edges) = edges
 

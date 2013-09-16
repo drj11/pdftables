@@ -9,6 +9,7 @@ from os.path import abspath
 
 Point = namedtuple('Point', ['x', 'y'])
 Line = namedtuple('Line', ['start', 'end'])
+Polygon = namedtuple('Polygon', 'lines')
 Rectangle = namedtuple('Rectangle', ['top_left', 'bottom_right'])
 AnnotationGroup = namedtuple('AnnotationGroup', ['name', 'colour', 'shapes'])
 Colour = namedtuple('Colour', ['red', 'green', 'blue'])
@@ -22,6 +23,19 @@ __all__ = [
 def draw_line(context, line):
     context.move_to(line.start.x, line.start.y)
     context.line_to(line.end.x, line.end.y)
+    context.stroke()
+
+
+def draw_polygon(context, polygon):
+    if len(polygon.lines) == 0:
+        return
+
+    first_line = polygon.lines[0]
+
+    context.move_to(first_line.start.x, first_line.start.y)
+    for line in polygon.lines[1:]:
+        context.line_to(line.start.x, line.start.y)
+
     context.stroke()
 
 
@@ -39,6 +53,7 @@ def draw_rectangle(context, rectangle):
 RENDERERS = {}
 RENDERERS[Line] = draw_line
 RENDERERS[Rectangle] = draw_rectangle
+RENDERERS[Polygon] = draw_polygon
 
 
 class CairoPdfPageRenderer(object):
@@ -146,7 +161,105 @@ def make_annotations(table_container):
                 shapes=convert_vertical_lines(
                     table.column_edges, table.bounding_box)))
 
+        annotations.append(
+            AnnotationGroup(
+                name='glyph_histogram_horizontal',
+                colour=Colour(1, 0, 0),
+                shapes=make_glyph_histogram(
+                    table._h_glyph_histogram, table.bounding_box,
+                    direction="horizontal")))
+
+        annotations.append(
+            AnnotationGroup(
+                name='glyph_histogram_vertical',
+                colour=Colour(1, 0, 0),
+                shapes=make_glyph_histogram(
+                    table._v_glyph_histogram, table.bounding_box,
+                    direction="vertical")))
+
+        annotations.append(
+            AnnotationGroup(
+                name='horizontal_glyph_above_threshold',
+                colour=Colour(0, 0, 0),
+                shapes=make_thresholds(
+                    table._h_threshold_segs, table.bounding_box,
+                    direction="horizontal")))
+
+        annotations.append(
+            AnnotationGroup(
+                name='vertical_glyph_above_threshold',
+                colour=Colour(0, 0, 0),
+                shapes=make_thresholds(
+                    table._v_threshold_segs, table.bounding_box,
+                    direction="vertical")))
+
     return annotations
+
+
+def make_thresholds(segments, box, direction):
+    lines = []
+
+    for segment in segments:
+
+        if direction == "horizontal":
+            lines.append(Line(Point(segment.start, box.bottom + 10),
+                              Point(segment.end, box.bottom + 10)))
+        else:
+            lines.append(Line(Point(10, segment.start),
+                              Point(10, segment.end)))
+
+    return lines
+
+
+def make_glyph_histogram(histogram, box, direction):
+
+    # if direction == "vertical":
+        # return []
+
+    bin_edges, bin_values = histogram
+
+    lines = []
+    polygon = Polygon(lines)
+
+    def line(*args):
+        lines.append(Line(*args))
+
+    previous_value = 0 if direction == "horizontal" else box.bottom
+
+    x = zip(bin_edges, bin_edges[1:], bin_values)
+    for first_edge, second_edge, value in x:
+
+        if direction == "horizontal":
+            value *= 0.75
+            value = box.bottom - value
+
+            line(Point(first_edge, previous_value), Point(first_edge, value))
+            line(Point(first_edge, value), Point(second_edge, value))
+
+        else:
+            value *= 0.25
+            value += 7  # shift pixels to the right
+
+            line(Point(previous_value, first_edge), Point(value, first_edge))
+            line(Point(value, first_edge), Point(value, second_edge))
+
+        previous_value = value
+
+    if direction == "horizontal":
+        line(Point(second_edge, value), Point(second_edge, 0))
+    else:
+        line(Point(value, second_edge), Point(0, second_edge))
+
+    lines = []
+    if direction == "horizontal":
+        for edge in bin_edges:
+            lines.append(Line(Point(edge, box.bottom),
+                              Point(edge, box.bottom + 5)))
+    else:
+        for edge in bin_edges:
+            lines.append(Line(Point(0, edge), Point(5, edge)))
+
+    return [polygon] + lines
 
 
 def convert_rectangles(boxes):

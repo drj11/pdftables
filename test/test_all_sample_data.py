@@ -18,7 +18,7 @@ EXPECTED_DIR = join(dirname(__file__), '..', 'fixtures', 'expected_output')
 ACTUAL_DIR = join(dirname(__file__), '..', 'fixtures', 'actual_output')
 
 
-def test_sample_data():
+def _test_sample_data():
     for filename in os.listdir(SAMPLE_DIR):
         yield _test_sample_pdf, filename
 

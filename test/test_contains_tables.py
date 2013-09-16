@@ -8,7 +8,6 @@ ContainsTables tests
 """
 
 import sys
-sys.path.append('code')
 
 import pdftables
 

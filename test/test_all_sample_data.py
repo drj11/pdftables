@@ -6,8 +6,7 @@ from nose.tools import assert_equal
 from os.path import join, dirname
 import os
 
-from pdftables import page_to_tables
-from pdftables.pdf_document import PDFDocument
+from pdftables.pdftables import page_to_tables
 from pdftables.display import to_string
 from pdftables.diagnostics import render_page, make_annotations
 
@@ -25,25 +24,21 @@ def test_sample_data():
 
 
 def _test_sample_pdf(short_filename):
-    doc = PDFDocument(fixture(short_filename))
+    doc = fixture(short_filename)
     for page_number, page in enumerate(doc.get_pages()):
 
-        # TODO: Enable this!
-        # tables = page_to_tables(fixture(short_filename))
-        # annotations = make_annotations(tables)
-        annotations = []
+        tables = page_to_tables(page)
+        annotations = make_annotations(tables)
 
-        outfile_base = join(
-            RENDERED_DIR,
-            'svgs',
-            '{0}_{1}'.format(short_filename))
+        basename = '{0}_{1}'.format(short_filename, page_number)
 
         render_page(
             join(SAMPLE_DIR, short_filename),
             page_number,
             annotations,
-            svg_file=outfile_base + '.svg',
-            png_file=outfile_base + '.png')
+            svg_file=join(RENDERED_DIR, 'svgs', basename + '.svg'),
+            png_file=join(RENDERED_DIR, 'pngs', basename + '.png')
+        )
 
     assert_equal(get_expected_number_of_tables(short_filename), len(tables))
     for table_num, table in enumerate(tables):

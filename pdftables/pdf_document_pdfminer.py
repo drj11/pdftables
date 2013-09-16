@@ -130,11 +130,14 @@ class PDFPage(BasePDFPage):
             # pdfminer gives coordinates such that y=0 is the bottom of the
             # page. Our algorithms expect y=0 is the top of the page, so..
             left, bottom, right, top = obj.bbox
-            return Box(Rectangle(
-                x1=left, x2=right,
-                y1=page_height - top,
-                y2=page_height - bottom,
-            ))
+            return Box(
+                rect=Rectangle(
+                    x1=left, x2=right,
+                    y1=page_height - top,
+                    y2=page_height - bottom,
+                ),
+                text=obj.get_text()
+            )
 
         return BoxList(make_box(obj) for obj in items if keep(obj))
 

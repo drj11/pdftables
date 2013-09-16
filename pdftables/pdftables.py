@@ -12,7 +12,7 @@ http://denis.papathanasiou.org/2010/08/04/extracting-text-images-from-pdf-files
 # TODO Handle argentina_diputados_voting_record.pdf automatically
 # TODO Handle multiple tables on one page
 
-__all__ = ["get_tables"]
+__all__ = ["get_tables", "page_to_tables", "page_contains_tables"]
 
 import codecs
 import collections
@@ -97,7 +97,7 @@ def page_contains_tables(pdf_page):
         raise TypeError("Page must be PDFPage, not {}".format(
             pdf_page.__class__))
 
-    box_list = pdf_page.get_boxes(set((PDFPage.BoxPage, PDFPage.BoxLine)))
+    box_list = pdf_page.get_glyphs()
 
     boxtop = attrgetter("top")
     yhist = box_list.histogram(boxtop).rounder(1)
@@ -425,6 +425,7 @@ def find_bounding_boxes(glyphs, config):
     # TODO(pwaller): One day, this function will find more than one table.
 
     th, bh = config.table_top_hint, config.table_bottom_hint
+    assert(glyphs is not None)
     bbox = find_table_bounding_box(glyphs, th, bh)
 
     if bbox is Box.empty_box:
@@ -434,7 +435,7 @@ def find_bounding_boxes(glyphs, config):
     return [bbox]
 
 
-def compute_cell_edges(box, h_segments, v_segments, config):  # box_list, bounds, config):
+def compute_cell_edges(box, h_segments, v_segments, config):
     """
     Determines edges of cell content horizontally and vertically. It
     works by binning and thresholding the resulting histogram for
@@ -443,7 +444,7 @@ def compute_cell_edges(box, h_segments, v_segments, config):  # box_list, bounds
 
     def gap_midpoints(segments):
 
-        return [(a.end + b.start)/2 for a, b in zip(segments, segments[1:])]
+        return [(a.end + b.start) / 2 for a, b in zip(segments, segments[1:])]
 
     return gap_midpoints(h_segments), gap_midpoints(v_segments)
 
@@ -532,12 +533,13 @@ def find_table_bounding_box(box_list, table_top_hint, table_bottom_hint):
     def hints_y():
         miny = float("-inf")
         maxy = float("+inf")
+        glyphs = [glyph for glyph in box_list if glyph.text is not None]
         if table_top_hint:
-            top_box = [box for box in box_list if top_string in box.text]
+            top_box = [box for box in glyphs if table_top_hint in box.text]
             if top_box:
                 miny = top_box[0].top
         if table_bottom_hint:
-            bottomBox = [box for box in box_list if bottom_string in box.text]
+            bottomBox = [box for box in glyphs if table_bottom_hint in box.text]
             if bottomBox:
                 maxy = bottomBox[0].bottom
         return Box(Rectangle(

@@ -98,12 +98,12 @@ class Box(object):
         return self.rect[3]
 
     @property
-    def midline(self):
-        return (self.right - self.left) / 2.
+    def center_x(self):
+        return (self.left + self.right) / 2.
 
     @property
-    def centreline(self):
-        return (self.bottom - self.top) / 2.
+    def center_y(self):
+        return (self.bottom + self.top) / 2.
 
     @property
     def width(self):

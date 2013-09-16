@@ -21,6 +21,7 @@ import sys
 
 import numpy_subset
 
+from bisect import bisect
 from counter import Counter
 from cStringIO import StringIO
 from operator import attrgetter
@@ -118,6 +119,35 @@ def threshold_above(hist, threshold_value):
     return above
 
 
+def apply_combs(box_list, x_comb, y_comb):
+    """
+    Allocates text to table cells using the x and y combs
+    """
+
+    assert x_comb == sorted(x_comb)
+    assert y_comb == sorted(y_comb)
+
+    ncolumns = len(x_comb)
+    nrows = len(y_comb)
+
+    table_array = [[''] * ncolumns for j in range(nrows)]
+
+    for box in box_list:
+        if box.text is None:
+            # Glyph has no text, ignore it.
+            continue
+
+        x, y = box.center_x, box.center_y
+
+        # Compute index of "gap" between two combs, rather than the comb itself
+        col = bisect(x_comb, x)
+        row = bisect(y_comb, y)
+
+        table_array[row][col] += box.text.rstrip('\n\r')
+
+    return table_array
+
+
 def comb(combarray, value):
     """
     Takes a sorted array and returns the interval number of the value passed to
@@ -141,7 +171,7 @@ def comb(combarray, value):
     return index
 
 
-def apply_combs(box_list, x_comb, y_comb):
+def apply_combs_old(box_list, x_comb, y_comb):
     """Allocates text to table cells using the x and y combs"""
     ncolumns = len(x_comb) - 1
     nrows = len(y_comb) - 1
@@ -393,6 +423,8 @@ def page_to_tables(pdf_page, config=None):
         table.glyphs = tables.all_glyphs.inside(box)
 
         # Fetch line-segments
+        # h is lines with fixed y, multiple x values
+        # v is lines with fixed x, multiple y values
         table._h_segments, table._v_segments = table.glyphs.line_segments()
 
         # Histogram them
@@ -405,7 +437,7 @@ def page_to_tables(pdf_page, config=None):
 
         # Compute edges (the set of edges used to be called a 'comb')
         edges = compute_cell_edges(box, h, v, config)
-        (table.column_edges, table.row_edges) = edges
+        table.column_edges, table.row_edges = edges
 
         if table.column_edges and table.row_edges:
             table.data = compute_table_data(table)
@@ -442,11 +474,26 @@ def compute_cell_edges(box, h_segments, v_segments, config):
     each of the two axes (x and y).
     """
 
+    # TODO(pwaller): shove this on a config?
+    # these need better names before being part of a public API.
+    # They specify the minimum amount of space between "threshold-segments"
+    # in the histogram of line segments and the minimum length, otherwise
+    # they are not considered a gap.
+    # units= pdf "points"
+    minimum_segment_size = 0.5
+    minimum_gap_size = 0.5
+
     def gap_midpoints(segments):
+        return [(b.start + a.end) / 2.
+                for a, b in zip(segments, segments[1:])
+                if b.start - a.end > minimum_gap_size
+                   and b.length > minimum_segment_size
+                ]
 
-        return [(a.end + b.start) / 2 for a, b in zip(segments, segments[1:])]
+    column_edges = gap_midpoints(h_segments) + [box.right]
+    row_edges = gap_midpoints(v_segments) + [box.bottom]
 
-    return gap_midpoints(h_segments), gap_midpoints(v_segments)
+    return column_edges, row_edges
 
     # Project boxes onto horizontal axis
     column_projection = project_boxes(box_list, "column")

@@ -170,12 +170,6 @@ def make_annotations(table_container):
 
     annotations.append(
         AnnotationGroup(
-            name='table_bounding_boxes',
-            color=Color(0, 0, 1),
-            shapes=convert_rectangles(table_container.bounding_boxes)))
-
-    annotations.append(
-        AnnotationGroup(
             name='all_glyphs',
             color=Color(0, 1, 0),
             shapes=convert_rectangles(table_container.all_glyphs)))
@@ -226,6 +220,13 @@ def make_annotations(table_container):
                 shapes=make_thresholds(
                     table._v_threshold_segs, table.bounding_box,
                     direction="vertical")))
+
+    # Draw bounding boxes last so that they appear on top
+    annotations.append(
+        AnnotationGroup(
+            name='table_bounding_boxes',
+            colour=Colour(0, 0, 1),
+            shapes=convert_rectangles(table_container.bounding_boxes)))
 
     return annotations
 

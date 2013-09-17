@@ -24,7 +24,10 @@ from collections import defaultdict, namedtuple
 from heapq import heappush, heapreplace, heappop
 
 
-LineSegment = namedtuple("LineSegment", ["start", "end"])
+class LineSegment(namedtuple("LineSegment", ["start", "end"])):
+    @property
+    def length(self):
+        return self.end - self.start
 
 
 def segments_generator(line_segments):

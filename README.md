@@ -92,5 +92,4 @@ download_test_data.sh
 
 [1]: http://www.unixuser.org/~euske/python/pdfminer/
 
-[![Build Status](https://travis-ci.org/scraperwiki/pdftables.png)](https://travis-ci.org/scraperwiki/pdftables)
 

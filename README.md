@@ -1,5 +1,5 @@
 # pdftables - a library for extracting tables from PDF files
-[![Build Status](https://travis-ci.org/scraperwiki/pdftables.png)](https://travis-ci.org/scraperwiki/pdftables)
+[![Build Status](https://travis-ci.org/scraperwiki/pdftables.png?branch=master)](https://travis-ci.org/scraperwiki/pdftables)
 
 ## Installation
 

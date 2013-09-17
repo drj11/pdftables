@@ -3,16 +3,17 @@
 """pdftables-render: obtain pdftables debugging information from pdfs
 
 Usage:
-    pdftables-render [options] [--] (<pdfpath>[:page])...
+    pdftables-render [options] <pdfpath>...
     pdftables-render (-h | --help)
     pdftables-render --version
     pdftables-render --check <pdfpath>
 
 Options:
-    -h --help     Show this screen.
-    --version     Show version.
-    -D --debug 		Additional debug information
-    -O --output-dir=<path> 	Path to write debug data to
+    -h --help                   Show this screen.
+    --version                   Show version.
+    -D --debug                  Additional debug information
+    -O --output-dir=<path>      Path to write debug data to
+    -a --ascii                  Show ascii table
 """
 
 # Use $ pip install --editable pdftables
@@ -27,6 +28,7 @@ from docopt import docopt
 
 from pdftables.pdf_document import PDFDocument
 from pdftables.diagnostics import render_page, make_annotations
+from pdftables.display import to_string
 from pdftables.pdftables import page_to_tables
 
 
@@ -40,10 +42,10 @@ def main():
         return check(arguments["<pdfpath>"][0])
 
     for pdf_filename in arguments["<pdfpath>"]:
-        render_pdf(pdf_filename)
+        render_pdf(arguments, pdf_filename)
 
 
-def render_pdf(pdf_filename):
+def render_pdf(arguments, pdf_filename):
     with open(pdf_filename, "rb") as fd:
 
         doc = PDFDocument.from_fileobj(fd)
@@ -71,6 +73,10 @@ def render_pdf(pdf_filename):
                 pdf_filename, page_number, annotations, svg_file, png_file)
 
             print "Rendered", svg_file, png_file
+
+            if arguments["--ascii"]:
+                for table in table_container:
+                    print to_string(table.data)
 
 
 def check(path):

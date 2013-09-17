@@ -21,6 +21,7 @@ Options:
 import pdftables
 
 from os.path import basename
+import os
 
 from docopt import docopt
 
@@ -47,10 +48,20 @@ def render_pdf(pdf_filename):
 
         doc = PDFDocument.from_fileobj(fd)
 
+        try:
+            os.mkdir('png')
+        except OSError:
+            pass
+
+        try:
+            os.mkdir('svg')
+        except OSError:
+            pass
+
         for page_number, page in enumerate(doc.get_pages()):
-            svg_file = 'svgs/{0}_{1:02d}.svg'.format(
+            svg_file = 'svg/{0}_{1:02d}.svg'.format(
                 basename(pdf_filename), page_number)
-            png_file = 'pngs/{0}_{1:02d}.png'.format(
+            png_file = 'png/{0}_{1:02d}.png'.format(
                 basename(pdf_filename), page_number)
 
             table_container = page_to_tables(page)

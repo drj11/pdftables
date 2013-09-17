@@ -1,7 +1,8 @@
 #! /usr/bin/env python
 
 import ctypes
-from poppler import document_new_from_file
+from poppler import *
+import poppler
 
 from ctypes import CDLL, POINTER, c_voidp, c_double, c_uint, c_bool
 from ctypes import Structure
@@ -10,14 +11,14 @@ from weakref import WeakKeyDictionary
 wd = WeakKeyDictionary()
 
 
-class Rectangle(Structure):
+class PatchedRectangle(Structure):
     _fields_ = [
         ("x0", c_double),
         ("y0", c_double),
         ("x1", c_double),
         ("y1", c_double),
     ]
-Rectangle.ptr = POINTER(Rectangle)
+PatchedRectangle.ptr = POINTER(PatchedRectangle)
 
 glib = CDLL("libpoppler-glib.so.8")
 
@@ -28,11 +29,11 @@ g_free.argtypes = c_voidp,
 def page_get_text_layout(page):
 
     fn = glib.poppler_page_get_text_layout
-    fn.argtypes = c_voidp, POINTER(Rectangle.ptr), POINTER(c_uint)
+    fn.argtypes = c_voidp, POINTER(PatchedRectangle.ptr), POINTER(c_uint)
     fn.restype = c_bool
 
     n = c_uint(0)
-    rects = Rectangle.ptr()
+    rects = PatchedRectangle.ptr()
 
     # From python-poppler internals, see also the repr(page)
     page_ptr = hash(page)
@@ -40,7 +41,7 @@ def page_get_text_layout(page):
     fn(page_ptr, rects, n)
     #return []
 
-    rs = POINTER(Rectangle * n.value).from_address(ctypes.addressof(rects))
+    rs = POINTER(PatchedRectangle * n.value).from_address(ctypes.addressof(rects))
 
     rects = []
 

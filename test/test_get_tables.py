@@ -18,22 +18,22 @@ from fixtures import fixture
 from nose.tools import *
 
 
-def test_it_exits_gracefully_when_no_tables_found():
+def test_it_doesnt_find_tables_when_there_arent_any():
     pdf_page = fixture(
-        "13_06_12_10_36_58_boletim_ingles_junho_2013.pdf").get_page(5)
+        "13_06_12_10_36_58_boletim_ingles_junho_2013.pdf").get_page(4)
     tables = page_to_tables(pdf_page)
 
-    assert_equals([], tables)
+    assert_equals([], tables.tables[0].data)
 
 
 def test_it_copes_with_CONAB_p8():
     pdf_page = fixture(
-        "13_06_12_10_36_58_boletim_ingles_junho_2013.pdf").get_page(8)
-    table = page_to_tables(pdf_page, ConfigParameters(atomise=True))
+        "13_06_12_10_36_58_boletim_ingles_junho_2013.pdf").get_page(7)
+    page_to_tables(pdf_page, ConfigParameters(atomise=True))
 
 
 def test_it_can_use_hints_AlmondBoard_p1():
-    pdf_page = fixture("2012.01.PosRpt.pdf").get_page(1)
+    pdf_page = fixture("2012.01.PosRpt.pdf").get_page(0)
     tables = page_to_tables(
         pdf_page,
         ConfigParameters(
@@ -66,51 +66,55 @@ def test_it_can_use_hints_AlmondBoard_p1():
          u'13.  Export', u'', u'226,349,446', u'155,042,764', u'45.99%'],
          [u'14.  Total Commited Shipments', u'',
          u'440,871,684', u'342,535,027', u'28.71%'],
-         [u'15.  Uncommited Inventory (11-14)', u'', u'648,881,202', u'560,983,355', u'15.67%']], tables)
+         [u'15.  Uncommited Inventory (11-14)', u'', u'648,881,202', u'560,983,355', u'15.67%']], tables.tables[0].data)
 
 
 def test_it_can_use_one_hint_argentina_by_size():
-    pdf_page = fixture("argentina_diputados_voting_record.pdf").get_page(1)
-    table1 = page_to_tables(
+    pdf_page = fixture("argentina_diputados_voting_record.pdf").get_page(0)
+    tables = page_to_tables(
         pdf_page,
         ConfigParameters(
             atomise=False,
             table_top_hint='Apellido'))
     #table1,_ = getTable(fh, 2)
+    table1 = list(tables)[0].data
     assert_equals(32, len(table1))
     assert_equals(4, len(table1[0]))
 
 
 def test_it_returns_the_AlmondBoard_p2_table_by_size():
-    pdf_page = fixture("2012.01.PosRpt.pdf").get_page(2)
-    table1 = page_to_tables(pdf_page, ConfigParameters(atomise=False))
-    #table1, _ = getTable(fh, 2)
+    pdf_page = fixture("2012.01.PosRpt.pdf").get_page(1)
+    tables = page_to_tables(pdf_page, ConfigParameters(atomise=False))
+    table1 = list(tables)[0].data
     assert_equals(78, len(table1))
     assert_equals(9, len(table1[0]))
 
 
 def test_the_atomise_option_works_on_coceral_p1_by_size():
     pdf_page = fixture(
-        "1359397366Final_Coceral grain estimate_2012_December.pdf").get_page(1)
-    table = page_to_tables(pdf_page,
-                              ConfigParameters(
-                              atomise=True))
+        "1359397366Final_Coceral grain estimate_2012_December.pdf").get_page(0)
+    tables = page_to_tables(pdf_page,
+                            ConfigParameters(
+                            atomise=True))
+    table = list(tables)[0].data
     #table1, _ = getTable(fh, 2)
     assert_equals(43, len(table))
     assert_equals(31, len(table[0]))
 
 
 def test_it_does_not_crash_on_m30_p5():
-    pdf_page = fixture("m30-JDent36s15-20.pdf").get_page(5)
-    table = page_to_tables(pdf_page)
+    pdf_page = fixture("m30-JDent36s15-20.pdf").get_page(4)
+    tables = page_to_tables(pdf_page)
+    table = list(tables)[0].data
+    assert len(table) > 0
     """Put this in for more aggressive test"""
     # assert_equals([u'5\n', u'0.75\n', u'0.84\n', u'0.92\n', u'0.94\n', u'evaluation of a novel liquid whitening gel containing 18%\n'],
     #              table[4])
 
 
 def test_it_returns_the_AlmondBoard_p4_table():
-    pdf_page = fixture("2012.01.PosRpt.pdf").get_page(4)
-    table = page_to_tables(
+    pdf_page = fixture("2012.01.PosRpt.pdf").get_page(3)
+    tables = page_to_tables(
         pdf_page,
         ConfigParameters(
             atomise=False,
@@ -182,5 +186,5 @@ def test_it_returns_the_AlmondBoard_p4_table():
          u'1,893,945,819', u'14,858,780', u'99.92%', u'0.78%'],
          [u'Minor Varieties Total:', u'1,454,133',
          u'1,480,800', u'34,997', u'0.08%', u'2.36%'],
-         [u'Grand Total All Varieties', u'1,914,471,575', u'1,895,426,619', u'14,893,777', u'100.00%', u'0.79%']], table
+         [u'Grand Total All Varieties', u'1,914,471,575', u'1,895,426,619', u'14,893,777', u'100.00%', u'0.79%']], tables.tables[0].data
     )

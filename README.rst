@@ -12,11 +12,11 @@ pdftables - a library for extracting tables from PDF files
 
 ..
 
-`[This post] <http://blog.scraperwiki.com/2013/07/29/pdftables-a-python-library-for-getting-tables-out-of-pdf-files>`_
+`This post <http://blog.scraperwiki.com/2013/07/29/pdftables-a-python-library-for-getting-tables-out-of-pdf-files>`_
 on the ScraperWiki blog describes the algorithms used in pdftables, and
 something of its genesis. This README gives more technical information.
 
-pdftables uses `[pdfminer] <http://www.unixuser.org/~euske/python/pdfminer/>`_ to get information on the locations of text
+pdftables uses `pdfminer <http://www.unixuser.org/~euske/python/pdfminer/>`_ to get information on the locations of text
 elements in a PDF document. pdfminer was chosen as a base because it provides
 information on the full range of page elements in PDF files, including
 graphical elements such as lines. Although the algorithms currently used do not

@@ -30,11 +30,13 @@ Installation
 You need poppler and Cairo. On a Ubuntu and friends you can go:
 
 .. code:: bash
+
   sudo apt-get -y install python-poppler python-cairo
 
 Then we can install the ``pip``-able requirements from the ``requirements.txt`` file:
 
 .. code:: bash
+
   pip install -r requirements.txt
 
 Usage

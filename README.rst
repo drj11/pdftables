@@ -1,7 +1,5 @@
 .. -*- mode: rst -*-
 
-`[see full documentation] <http://pdftables.readthedocs.org/>`_
-
 pdftables - a library for extracting tables from PDF files
 ==========================================================
 
@@ -11,6 +9,8 @@ pdftables - a library for extracting tables from PDF files
    :target: https://pypi.python.org/pypi/pdftables
 
 ..
+
+`This Readme, and more, is available on ReadTheDocs. <http://pdftables.readthedocs.org/>`_
 
 `This post <http://blog.scraperwiki.com/2013/07/29/pdftables-a-python-library-for-getting-tables-out-of-pdf-files>`_
 on the ScraperWiki blog describes the algorithms used in pdftables, and

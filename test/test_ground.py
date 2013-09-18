@@ -2,6 +2,7 @@ from pdftables.pdf_document import PDFDocument
 from pdftables.pdftables import page_to_tables
 import lxml.etree
 from collections import Counter
+from nose.tools import assert_equals
 
 
 class ResultTable(object):
@@ -15,10 +16,11 @@ class ResultTable(object):
 
     def __repr__(self):
         assert self.cells is not None
-        return "<ResultTable: {col}x{row} +{plus} -{minus}>".format(col=self.number_of_cols,
-                                                                    row=self.number_of_rows,
-                                                                    plus=sum(self.cells[x] for x in self.cells if self.cells[x] >= 1),
-                                                                    minus=abs(sum(self.cells[x] for x in self.cells if self.cells[x] <= -1)))
+        response = "<ResultTable: {col}x{row} +{plus} -{minus}>"
+        return response.format(col=self.number_of_cols,
+                               row=self.number_of_rows,
+                               plus=sum(self.cells[x] for x in self.cells if self.cells[x] >= 1),
+                               minus=abs(sum(self.cells[x] for x in self.cells if self.cells[x] <= -1)))
 
 
 def pdf_results(filename):
@@ -61,11 +63,23 @@ def xml_results(filename):
 
 
 
-for i in range(1, 35):
-    filebase = "fixtures/eu-dataset/eu-%03d%s"
-    pdf_tables = pdf_results(filebase % (i, ".pdf"))
-    # print "PDF: ", pdf_tables[0]
-    xml_tables = xml_results(filebase % (i, "-str.xml"))
-    # print "XML: ", xml_tables[0]
+def _test_ground(filebase, number):
+    """tests whether we successfully parse ground truth data:
+    see fixtures/eu-dataset"""
+    pdf_tables = pdf_results(filebase % (number, ".pdf"))
+    xml_tables = xml_results(filebase % (number, "-str.xml"))
+    assert_equals(len(pdf_tables), len(xml_tables))
+    for i in range(0, len(pdf_tables)):
+        pdf_table = pdf_tables[i]
+        xml_table = xml_tables[i]
+        diff = pdf_table - xml_table
+        clean_diff_list = {x:diff.cells[x] for x in diff.cells if diff.cells[x] != 0}
+        assert_equals(pdf_table.number_of_cols, xml_table.number_of_cols)
+        assert_equals(pdf_table.number_of_rows, xml_table.number_of_rows)
+        assert_equals(clean_diff_list, {})
 
-    print i, "PDF: ", pdf_tables[0], "XML: ", xml_tables[0], "DIFF: ", pdf_tables[0] - xml_tables[0]
+def test_all_eu():
+    filebase = "fixtures/eu-dataset/eu-%03d%s"
+    for i in range(1,35):  # 1..34
+        yield _test_ground, filebase, i
+

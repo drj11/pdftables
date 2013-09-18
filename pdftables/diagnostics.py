@@ -225,7 +225,7 @@ def make_annotations(table_container):
     annotations.append(
         AnnotationGroup(
             name='table_bounding_boxes',
-            colour=Colour(0, 0, 1),
+            color=Color(0, 0, 1),
             shapes=convert_rectangles(table_container.bounding_boxes)))
 
     return annotations

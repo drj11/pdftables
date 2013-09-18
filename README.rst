@@ -110,6 +110,8 @@ Files and folders::
 contains PDF files which are installed from a different repository by running
 the ``download_test_data.sh`` script.
 
+We're also using data from http://www.tamirhassan.com/competition/dataset-tools.html which is also installed by the download script.
+
 *pdftables* contains the core code files
 
 *test* contains tests
@@ -123,3 +125,6 @@ the ``download_test_data.sh`` script.
 **numpy_subset.py** - partially implements ``numpy.diff``, ``numpy.arange`` and ``numpy.average`` to avoid a large dependency on numpy.
 
 **pdf_document.py** - implements PDFDocument to abstract away the underlying PDF class, and ease any conversion to a different underlying PDF library to replace PDFminer
+
+
+

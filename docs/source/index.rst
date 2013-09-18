@@ -10,13 +10,13 @@ pdftables
    	:start-line: 13
 .. :end-line: 67
 
-Contents:
 
-.. toctree::
-   	:numbered:
-   	:maxdepth: 2
+.. Contents:
+   =========
 
-
+.. .. toctree::
+        :numbered:
+        :maxdepth: 2
 
 
 Indices and tables

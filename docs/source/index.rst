@@ -18,6 +18,12 @@ pdftables
         :numbered:
         :maxdepth: 2
 
+API reference
+=============
+
+.. automodule:: pdftables
+  :members:
+
 
 Indices and tables
 ==================

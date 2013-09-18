@@ -60,7 +60,7 @@ def xml_results(filename):
     return builder
 
 
-filebase = "fixtures/eu/eu-001%s"
+filebase = "fixtures/eu-dataset/eu-001%s"
 pdf_tables = pdf_results(filebase % ".pdf")
 print "PDF: ", pdf_tables[0]
 xml_tables = xml_results(filebase % "-str.xml")

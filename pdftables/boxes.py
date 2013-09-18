@@ -137,7 +137,7 @@ class BoxList(list):
         # Filter out zero width boxes, found in unica_preco_recebido.pdf
         # TODO(pwaller,ih): Investigate the origin of zero width boxes
         horizontal = [(b.left, b.right) for b in self if b.left != b.right]
-        vertical = [(b.top, b.bottom) for b in self]
+        vertical = [(b.top, b.bottom) for b in self if b.top != b.bottom]
 
         return horizontal, vertical
 

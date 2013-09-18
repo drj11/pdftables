@@ -60,10 +60,12 @@ def xml_results(filename):
     return builder
 
 
-filebase = "fixtures/eu-dataset/eu-001%s"
-pdf_tables = pdf_results(filebase % ".pdf")
-print "PDF: ", pdf_tables[0]
-xml_tables = xml_results(filebase % "-str.xml")
-print "XML: ", xml_tables[0]
 
-print list(pdf_tables)[0] - list(xml_tables)[0]
+for i in range(1, 35):
+    filebase = "fixtures/eu-dataset/eu-%03d%s"
+    pdf_tables = pdf_results(filebase % (i, ".pdf"))
+    # print "PDF: ", pdf_tables[0]
+    xml_tables = xml_results(filebase % (i, "-str.xml"))
+    # print "XML: ", xml_tables[0]
+
+    print i, "PDF: ", pdf_tables[0], "XML: ", xml_tables[0], "DIFF: ", pdf_tables[0] - xml_tables[0]

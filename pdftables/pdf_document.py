@@ -59,6 +59,12 @@ class PDFDocument(object):
         Return a PDFPage for page `number` (0 indexed!)
         """
 
+    @abc.abstractmethod
+    def get_pages(self):
+        """
+        Return all pages in the document: TODO(pwaller) move implementation here
+        """
+
 
 class PDFPage(object):
     __metaclass__ = abc.ABCMeta

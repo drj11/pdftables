@@ -21,15 +21,18 @@ Options:
     -D --debug                  Additional debug information
     -O --output-dir=<path>      Path to write debug data to
     -a --ascii                  Show ascii table
+    -p --pprint                 pprint.pprint() the table
 """
 
 # Use $ pip install --editable pdftables
 # to install this util in your path.
 
+import os
+
 import pdftables
 
 from os.path import basename
-import os
+from pprint import pprint
 
 from docopt import docopt
 
@@ -127,9 +130,12 @@ def render_pdf(arguments, pdf_filename):
 
             print "Rendered", svg_file, png_file
 
-            if arguments["--ascii"]:
-                for table in table_container:
+            for table in table_container:
+
+                if arguments["--ascii"]:
                     print to_string(table.data)
+                if arguments["--pprint"]:
+                    pprint(table.data)
 
 
 def check(path):

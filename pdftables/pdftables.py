@@ -157,35 +157,6 @@ def page_contains_tables(pdf_page):
     return len(test) > IS_TABLE_ROW_COUNT_THRESHOLD
 
 
-def apply_combs(box_list, x_comb, y_comb):
-    """
-    Allocates text to table cells using the x and y combs
-    """
-
-    assert x_comb == sorted(x_comb)
-    assert y_comb == sorted(y_comb)
-
-    ncolumns = len(x_comb)
-    nrows = len(y_comb)
-
-    table_array = [[''] * ncolumns for j in range(nrows)]
-
-    for box in box_list:
-        if box.text is None:
-            # Glyph has no text, ignore it.
-            continue
-
-        x, y = box.center_x, box.center_y
-
-        # Compute index of "gap" between two combs, rather than the comb itself
-        col = bisect(x_comb, x)
-        row = bisect(y_comb, y)
-
-        table_array[row][col] += box.text.rstrip('\n\r')
-
-    return table_array
-
-
 def page_to_tables(pdf_page, config=None):
     """
     The central algorithm to pdftables, find all the tables on ``pdf_page`` and
@@ -297,9 +268,23 @@ def compute_table_data(table):
     `page_to_tables`).
     """
 
-    # Applying the combs
-    table_array = apply_combs(
-        table.glyphs, table.column_edges, table.row_edges)
+    ncolumns = len(table.column_edges)
+    nrows = len(table.row_edges)
+
+    table_array = [[''] * ncolumns for j in range(nrows)]
+
+    for box in table.glyphs:
+        if box.text is None:
+            # Glyph has no text, ignore it.
+            continue
+
+        x, y = box.center_x, box.center_y
+
+        # Compute index of "gap" between two combs, rather than the comb itself
+        col = bisect(table.column_edges, x)
+        row = bisect(table.row_edges, y)
+
+        table_array[row][col] += box.text.rstrip('\n\r')
 
     return table_array
 

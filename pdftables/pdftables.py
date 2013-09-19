@@ -289,10 +289,37 @@ def compute_table_data(table):
         box_table[row][col].append(box)
 
     def compute_text(boxes):
+
         def ordering(box):
+            # TODO(pwaller, ianhopkinson): We may wish to somehow round() the
+            # y coordinate of boxes so that boxes which are "near enough" to
+            # each other end up on the same line. We'll do this later as
+            # necessary.
+            # Suggestion: Rounding should happen such that two characters are
+            # only put into the same y-bucket if their separation is such that
+            # a human wouldn't really percieve it.
+            # E.g, half or one pixel separation.
+            # Rationale: If they are further away than 1px (e.g, half a
+            # character or more, then it may be desirable to employ other
+            # methods)
             return (box.center_y, box.center_x)
 
-        return ''.join(box.text for box in sorted(boxes, key=ordering))
+        result = []
+        sorted_boxes = sorted(boxes, key=ordering)
+
+        for this, next in zip(sorted_boxes, sorted_boxes[1:]+[None]):
+            result.append(this.text)
+            if next is None:
+                continue
+            centerline_distance = next.center_y - this.center_y
+            # Maximum separation is when the two baselines are far enough away
+            # that the two characters don't overlap anymore
+            max_separation = this.height / 2 + next.height / 2
+
+            if centerline_distance >= max_separation:
+                result.append('\n')
+
+        return ''.join(result)
 
     table_array = []
     for row in box_table:

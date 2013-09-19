@@ -271,7 +271,8 @@ def compute_table_data(table):
     ncolumns = len(table.column_edges)
     nrows = len(table.row_edges)
 
-    table_array = [[''] * ncolumns for j in range(nrows)]
+    # This contains a list of `boxes` at each table cell
+    box_table = [[list() for i in range(ncolumns)] for j in range(nrows)]
 
     for box in table.glyphs:
         if box.text is None:
@@ -284,7 +285,18 @@ def compute_table_data(table):
         col = bisect(table.column_edges, x)
         row = bisect(table.row_edges, y)
 
-        table_array[row][col] += box.text.rstrip('\n\r')
+        # box_table[row][col] += box.text.rstrip('\n\r')
+        box_table[row][col].append(box)
+
+    def compute_text(boxes):
+        def ordering(box):
+            return (box.center_y, box.center_x)
+
+        return ''.join(box.text for box in sorted(boxes, key=ordering))
+
+    table_array = []
+    for row in box_table:
+        table_array.append([compute_text(boxes) for boxes in row])
 
     return table_array
 
@@ -351,7 +363,8 @@ def find_table_bounding_box(box_list, table_top_hint, table_bottom_hint):
                 miny = top_box[0].top
 
         if table_bottom_hint:
-            bottomBox = [box for box in glyphs if table_bottom_hint in box.text]
+            bottomBox = [
+                box for box in glyphs if table_bottom_hint in box.text]
             if bottomBox:
                 maxy = bottomBox[0].bottom
 

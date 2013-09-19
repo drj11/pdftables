@@ -25,6 +25,7 @@ from heapq import heappush, heapreplace, heappop
 
 
 class LineSegment(namedtuple("LineSegment", ["start", "end"])):
+
     @property
     def length(self):
         return self.end - self.start
@@ -120,7 +121,11 @@ def segment_histogram(line_segments):
     In [1]: list(linesegments.histogram_segments([(1, 4), (2, 3)]))
     Out[1]: [(1, 2, 3, 4), (1, 2, 1)]
     """
-    data = histogram_segments(line_segments)
+    data = list(histogram_segments(line_segments))
+
+    if not data:
+        return [(), ()]
+
     x, counts = zip(*data)
     starts, ends = zip(*x)
 

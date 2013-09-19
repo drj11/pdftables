@@ -69,15 +69,6 @@ class PDFDocument(object):
 class PDFPage(object):
     __metaclass__ = abc.ABCMeta
 
-    class BoxPage:
-        "Select page objects"
-    class BoxGlyph:
-        "Select glyph boxes"
-    class BoxWord:
-        "Select bounding boxes for words"
-    class BoxLine:
-        "Select bounding boxes for lines"
-
     @abc.abstractmethod
     def get_glyphs(self):
         """

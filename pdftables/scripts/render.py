@@ -8,6 +8,13 @@ Usage:
     pdftables-render --version
     pdftables-render --check <pdfpath>
 
+Example page number lists:
+
+    <pdfpath> may contain a [:page-number-list].
+
+    pdftables-render my.pdf:1
+    pdftables-render my.pdf:2,5-10,15-
+
 Options:
     -h --help                   Show this screen.
     --version                   Show version.
@@ -45,22 +52,68 @@ def main():
         render_pdf(arguments, pdf_filename)
 
 
+def ensure_dirs():
+    try:
+        os.mkdir('png')
+    except OSError:
+        pass
+
+    try:
+        os.mkdir('svg')
+    except OSError:
+        pass
+
+
+def parse_page_ranges(range_string, npages):
+    ranges = range_string.split(',')
+    result = []
+
+    def string_to_pagenumber(s):
+        if s == "":
+            return npages
+        return int(x)
+
+    for r in ranges:
+        if '-' not in r:
+            result.append(int(r))
+        else:
+            # Convert 1-based indices to 0-based and make integer.
+            points = [string_to_pagenumber(x) for x in r.split('-')]
+
+            if len(points) == 2:
+                start, end = points
+            else:
+                raise RuntimeError(
+                    "Malformed range string: {0}"
+                    .format(range_string))
+
+            # Plus one because it's (start, end) inclusive
+            result.extend(xrange(start, end + 1))
+
+    # Convert from one based to zero based indices
+    return [x - 1 for x in result]
+
+
 def render_pdf(arguments, pdf_filename):
+    ensure_dirs()
+
+    page_range_string = ''
+    page_set = []
+    if ':' in pdf_filename:
+        pdf_filename, page_range_string = pdf_filename.split(':')
+
     with open(pdf_filename, "rb") as fd:
 
         doc = PDFDocument.from_fileobj(fd)
 
-        try:
-            os.mkdir('png')
-        except OSError:
-            pass
-
-        try:
-            os.mkdir('svg')
-        except OSError:
-            pass
+        if page_range_string:
+            page_set = parse_page_ranges(page_range_string, len(doc))
 
         for page_number, page in enumerate(doc.get_pages()):
+            if page_set and page_number not in page_set:
+                # Page ranges have been specified by user, and this page not in
+                continue
+
             svg_file = 'svg/{0}_{1:02d}.svg'.format(
                 basename(pdf_filename), page_number)
             png_file = 'png/{0}_{1:02d}.png'.format(

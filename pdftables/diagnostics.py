@@ -253,6 +253,10 @@ def make_glyph_histogram(histogram, box, direction):
 
     bin_edges, bin_values = histogram
 
+    if not bin_edges:
+        # There are no glyphs, and nothing to render!
+        return []
+
     lines = []
     polygon = Polygon(lines)
 

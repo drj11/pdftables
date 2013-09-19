@@ -157,35 +157,6 @@ def page_contains_tables(pdf_page):
     return len(test) > IS_TABLE_ROW_COUNT_THRESHOLD
 
 
-def apply_combs(box_list, x_comb, y_comb):
-    """
-    Allocates text to table cells using the x and y combs
-    """
-
-    assert x_comb == sorted(x_comb)
-    assert y_comb == sorted(y_comb)
-
-    ncolumns = len(x_comb)
-    nrows = len(y_comb)
-
-    table_array = [[''] * ncolumns for j in range(nrows)]
-
-    for box in box_list:
-        if box.text is None:
-            # Glyph has no text, ignore it.
-            continue
-
-        x, y = box.center_x, box.center_y
-
-        # Compute index of "gap" between two combs, rather than the comb itself
-        col = bisect(x_comb, x)
-        row = bisect(y_comb, y)
-
-        table_array[row][col] += box.text.rstrip('\n\r')
-
-    return table_array
-
-
 def page_to_tables(pdf_page, config=None):
     """
     The central algorithm to pdftables, find all the tables on ``pdf_page`` and
@@ -297,9 +268,62 @@ def compute_table_data(table):
     `page_to_tables`).
     """
 
-    # Applying the combs
-    table_array = apply_combs(
-        table.glyphs, table.column_edges, table.row_edges)
+    ncolumns = len(table.column_edges)
+    nrows = len(table.row_edges)
+
+    # This contains a list of `boxes` at each table cell
+    box_table = [[list() for i in range(ncolumns)] for j in range(nrows)]
+
+    for box in table.glyphs:
+        if box.text is None:
+            # Glyph has no text, ignore it.
+            continue
+
+        x, y = box.center_x, box.center_y
+
+        # Compute index of "gap" between two combs, rather than the comb itself
+        col = bisect(table.column_edges, x)
+        row = bisect(table.row_edges, y)
+
+        # box_table[row][col] += box.text.rstrip('\n\r')
+        box_table[row][col].append(box)
+
+    def compute_text(boxes):
+
+        def ordering(box):
+            # TODO(pwaller, ianhopkinson): We may wish to somehow round() the
+            # y coordinate of boxes so that boxes which are "near enough" to
+            # each other end up on the same line. We'll do this later as
+            # necessary.
+            # Suggestion: Rounding should happen such that two characters are
+            # only put into the same y-bucket if their separation is such that
+            # a human wouldn't really percieve it.
+            # E.g, half or one pixel separation.
+            # Rationale: If they are further away than 1px (e.g, half a
+            # character or more, then it may be desirable to employ other
+            # methods)
+            return (box.center_y, box.center_x)
+
+        result = []
+        sorted_boxes = sorted(boxes, key=ordering)
+
+        for this, next in zip(sorted_boxes, sorted_boxes[1:]+[None]):
+            result.append(this.text)
+            if next is None:
+                continue
+            centerline_distance = next.center_y - this.center_y
+            # Maximum separation is when the two baselines are far enough away
+            # that the two characters don't overlap anymore
+            max_separation = this.height / 2 + next.height / 2
+
+            if centerline_distance >= max_separation:
+                result.append('\n')
+
+        return ''.join(result)
+
+    table_array = []
+    for row in box_table:
+        table_array.append([compute_text(boxes) for boxes in row])
 
     return table_array
 
@@ -366,7 +390,8 @@ def find_table_bounding_box(box_list, table_top_hint, table_bottom_hint):
                 miny = top_box[0].top
 
         if table_bottom_hint:
-            bottomBox = [box for box in glyphs if table_bottom_hint in box.text]
+            bottomBox = [
+                box for box in glyphs if table_bottom_hint in box.text]
             if bottomBox:
                 maxy = bottomBox[0].bottom
 

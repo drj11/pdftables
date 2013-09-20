@@ -38,9 +38,18 @@ class PDFDocument(object):
         raise NotImplementedError("Unknown backend '{0}'".format(BACKEND))
 
     @classmethod
-    def from_fileobj(cls, fh):
+    def from_path(cls, path):
         Class = cls._get_backend()
-        return Class(fh)
+        return Class(path)
+
+    @classmethod
+    def from_fileobj(cls, fh):
+        # TODO(pwaller): For now, put fh into a temporary file and call
+        # .from_path. Future: when we have a working stream input function for
+        # poppler, use that.
+        raise NotImplementedError
+        Class = cls._get_backend()
+        # return Class(fh) # This is wrong since constructor now takes a path.
 
     def __init__(self, *args, **kwargs):
         raise RuntimeError(

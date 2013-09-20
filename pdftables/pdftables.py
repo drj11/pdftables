@@ -355,8 +355,15 @@ def find_table_bounding_box(box_list, table_top_hint, table_bottom_hint):
         Try to reduce the y range with a threshold.
         """
 
+        return box_list.bounds()
+
+        # TODO(pwaller): Reconcile the below code
+
         boxtop = attrgetter("top")
         boxbottom = attrgetter("bottom")
+
+        # Note: (pwaller) this rounding excludes stuff I'm not sure we should
+        # be excluding. (e.g, in the unica- dataset)
 
         yhisttop = box_list.histogram(boxtop).rounder(2)
         yhistbottom = box_list.histogram(boxbottom).rounder(2)

@@ -162,6 +162,6 @@ def above_threshold(histogram, threshold):
                 end=second)
         else:
             # Insert a new one
-            above_threshold.append(LineSegment(first, second))
+            above_threshold.append(LineSegment(first, second, None))
 
     return above_threshold

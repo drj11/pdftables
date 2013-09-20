@@ -29,7 +29,7 @@ from operator import attrgetter
 
 from boxes import Box, BoxList, Rectangle
 from config_parameters import ConfigParameters
-from linesegments import segment_histogram, above_threshold, convolve_segments
+from linesegments import segment_histogram, above_threshold
 from pdf_document import PDFDocument, PDFPage
 
 IS_TABLE_COLUMN_COUNT_THRESHOLD = 3

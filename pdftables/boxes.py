@@ -10,6 +10,8 @@ from __future__ import unicode_literals
 from collections import namedtuple
 from counter import Counter
 
+from .linesegments import LineSegment
+
 
 def _rounder(val, tol):
     """
@@ -27,7 +29,12 @@ class Histogram(Counter):
         return c
 
 
-Rectangle = namedtuple("Rectangle", "x1 y1 x2 y2")
+class Rectangle(namedtuple("Rectangle", "x1 y1 x2 y2")):
+
+    def __repr__(self):
+        return (
+            "Rectangle(x1={0:6.02f} y1={1:6.02f} x2={2:6.02f} y2={3:6.02f})"
+            .format(*self))
 
 
 class Box(object):
@@ -59,7 +66,7 @@ class Box(object):
     def __repr__(self):
         if self is Box.empty_box:
             return "<Box rect=empty>"
-        return "<Box rect={0}>".format(self.rect)
+        return "<Box text={0!r:5s} rect={1}>".format(self.text, self.rect)
 
     def clip(self, *rectangles):
         """
@@ -134,10 +141,10 @@ class BoxList(list):
         Return line (start, end) corresponding to horizontal and vertical
         box edges
         """
-        # Filter out zero width boxes, found in unica_preco_recebido.pdf
-        # TODO(pwaller,ih): Investigate the origin of zero width boxes
-        horizontal = [(b.left, b.right) for b in self if b.left != b.right]
-        vertical = [(b.top, b.bottom) for b in self if b.top != b.bottom]
+        horizontal = [LineSegment(b.left, b.right, b)
+                      for b in self if b.left != b.right]
+        vertical = [LineSegment(b.top, b.bottom, b)
+                    for b in self if b.top != b.bottom]
 
         return horizontal, vertical
 

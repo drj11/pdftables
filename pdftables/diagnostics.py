@@ -3,7 +3,6 @@
 import sys
 from collections import namedtuple
 import poppler
-import patched_poppler
 import cairo
 
 from os.path import abspath
@@ -89,7 +88,7 @@ class CairoPdfPageRenderer(object):
             self._context.save()
             self._context.translate(offset, 0)
 
-            sel = patched_poppler.CRectangle()
+            sel = poppler.Rectangle()
             sel.x1, sel.y1 = (0, 0)
             sel.x2, sel.y2 = pdf_page.get_size()
 

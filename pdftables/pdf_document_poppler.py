@@ -23,7 +23,7 @@ class PDFDocument(BasePDFDocument):
 
     def __init__(self, file_path, password=""):
         uri = "file://{0}".format(abspath(file_path))
-        self._poppler = document_new_from_file(uri, password)
+        self._poppler = poppler.document_new_from_file(uri, password)
 
     def __len__(self):
         return self._poppler.get_n_pages()
@@ -32,7 +32,7 @@ class PDFDocument(BasePDFDocument):
         return PDFPage(self, n)
 
     def get_pages(self):
-        return [self.get_page(i) for i in len(self)]
+        return [self.get_page(i) for i in xrange(len(self))]
 
 
 class PDFPage(BasePDFPage):

@@ -106,42 +106,40 @@ def render_pdf(arguments, pdf_filename):
     if ':' in pdf_filename:
         pdf_filename, page_range_string = pdf_filename.split(':')
 
-    with open(pdf_filename, "rb") as fd:
+    doc = PDFDocument.from_path(pdf_filename)
 
-        doc = PDFDocument.from_fileobj(fd)
+    if page_range_string:
+        page_set = parse_page_ranges(page_range_string, len(doc))
 
-        if page_range_string:
-            page_set = parse_page_ranges(page_range_string, len(doc))
+    for page_number, page in enumerate(doc.get_pages()):
+        if page_set and page_number not in page_set:
+            # Page ranges have been specified by user, and this page not in
+            continue
 
-        for page_number, page in enumerate(doc.get_pages()):
-            if page_set and page_number not in page_set:
-                # Page ranges have been specified by user, and this page not in
-                continue
+        svg_file = 'svg/{0}_{1:02d}.svg'.format(
+            basename(pdf_filename), page_number)
+        png_file = 'png/{0}_{1:02d}.png'.format(
+            basename(pdf_filename), page_number)
 
-            svg_file = 'svg/{0}_{1:02d}.svg'.format(
-                basename(pdf_filename), page_number)
-            png_file = 'png/{0}_{1:02d}.png'.format(
-                basename(pdf_filename), page_number)
+        table_container = page_to_tables(page)
+        annotations = make_annotations(table_container)
 
-            table_container = page_to_tables(page)
-            annotations = make_annotations(table_container)
+        render_page(
+            pdf_filename, page_number, annotations, svg_file, png_file)
 
-            render_page(
-                pdf_filename, page_number, annotations, svg_file, png_file)
+        print "Rendered", svg_file, png_file
 
-            print "Rendered", svg_file, png_file
+        if arguments["--interactive"]:
+            from ipdb import set_trace
+            set_trace()
 
-            if arguments["--interactive"]:
-                from ipdb import set_trace
-                set_trace()
+        for table in table_container:
 
-            for table in table_container:
+            if arguments["--ascii"]:
+                print to_string(table.data)
 
-                if arguments["--ascii"]:
-                    print to_string(table.data)
-
-                if arguments["--pprint"]:
-                    pprint(table.data)
+            if arguments["--pprint"]:
+                pprint(table.data)
 
 
 def check(path):

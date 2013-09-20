@@ -26,9 +26,10 @@ class PDFDocument(BasePDFDocument):
     """
 
     @staticmethod
-    def _initialise(fh):
+    def _initialise(file_handle):
+
         (doc, parser) = (pdfminer.pdfparser.PDFDocument(),
-                         pdfminer.pdfparser.PDFParser(fh))
+                         pdfminer.pdfparser.PDFParser(file_handle))
 
         parser.set_document(doc)
         doc.set_parser(parser)
@@ -49,10 +50,13 @@ class PDFDocument(BasePDFDocument):
 
         return doc, interpreter, aggregator
 
-    def __init__(self, fh):
+    def __init__(self, file_path):
         self._pages = None
 
-        (self._doc, self._interpreter, self._device) = self._initialise(fh)
+        self._file_handle = open(file_path, "rb")
+
+        result = self._initialise(self._file_handle)
+        (self._doc, self._interpreter, self._device) = result
 
     def __len__(self):
         return len(self.get_pages())
@@ -69,6 +73,9 @@ class PDFDocument(BasePDFDocument):
 
         return self._pages
 
+    def _construct_pages(self):
+        self._pages = [PDFPage(self, page) for page in self._doc.get_pages()]
+
     def get_page(self, page_number):
         """
         0-based page getter
@@ -78,9 +85,6 @@ class PDFDocument(BasePDFDocument):
             return pages[page_number]
         raise IndexError("Invalid page. Reminder: get_page() is 0-indexed "
                          "(there are {0} pages)!".format(len(pages)))
-
-    def _construct_pages(self):
-        self._pages = [PDFPage(self, page) for page in self._doc.get_pages()]
 
 
 def children(obj):

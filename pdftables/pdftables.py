@@ -21,14 +21,15 @@ import sys
 
 import numpy_subset
 
-from bisect import bisect
+from bisect import bisect_left
+from collections import defaultdict
 from counter import Counter
 from cStringIO import StringIO
 from operator import attrgetter
 
 from boxes import Box, BoxList, Rectangle
 from config_parameters import ConfigParameters
-from linesegments import segment_histogram, above_threshold
+from linesegments import segment_histogram, above_threshold, convolve_segments
 from pdf_document import PDFDocument, PDFPage
 
 IS_TABLE_COLUMN_COUNT_THRESHOLD = 3
@@ -254,8 +255,8 @@ def compute_cell_edges(box, h_segments, v_segments, config):
                    and b.length > minimum_segment_size
                 ]
 
-    column_edges = gap_midpoints(h_segments) + [box.right]
-    row_edges = gap_midpoints(v_segments) + [box.bottom]
+    column_edges = [box.left] + gap_midpoints(h_segments) + [box.right]
+    row_edges = [box.top] + gap_midpoints(v_segments) + [box.bottom]
 
     return column_edges, row_edges
 
@@ -282,10 +283,11 @@ def compute_table_data(table):
         x, y = box.center_x, box.center_y
 
         # Compute index of "gap" between two combs, rather than the comb itself
-        col = bisect(table.column_edges, x)
-        row = bisect(table.row_edges, y)
+        col = bisect_left(table.column_edges, x)
+        row = bisect_left(table.row_edges, y)
 
-        # box_table[row][col] += box.text.rstrip('\n\r')
+        # If this blows up, please check what "box" is when it blows up.
+        # Is it a "\n" ?
         box_table[row][col].append(box)
 
     def compute_text(boxes):
@@ -355,8 +357,15 @@ def find_table_bounding_box(box_list, table_top_hint, table_bottom_hint):
         Try to reduce the y range with a threshold.
         """
 
+        return box_list.bounds()
+
+        # TODO(pwaller): Reconcile the below code
+
         boxtop = attrgetter("top")
         boxbottom = attrgetter("bottom")
+
+        # Note: (pwaller) this rounding excludes stuff I'm not sure we should
+        # be excluding. (e.g, in the unica- dataset)
 
         yhisttop = box_list.histogram(boxtop).rounder(2)
         yhistbottom = box_list.histogram(boxbottom).rounder(2)

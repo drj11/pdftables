@@ -1,72 +1,60 @@
 #! /usr/bin/env python
 
 import ctypes
-from poppler import *
 import poppler
 
 from ctypes import CDLL, POINTER, c_voidp, c_double, c_uint, c_bool
-from ctypes import Structure
+from ctypes import Structure, addressof
 
-from weakref import WeakKeyDictionary
-wd = WeakKeyDictionary()
+from .boxes import Rectangle
 
 
-class PatchedRectangle(Structure):
+class CRectangle(Structure):
     _fields_ = [
-        ("x0", c_double),
-        ("y0", c_double),
         ("x1", c_double),
         ("y1", c_double),
+        ("x2", c_double),
+        ("y2", c_double),
     ]
-PatchedRectangle.ptr = POINTER(PatchedRectangle)
+CRectangle.ptr = POINTER(CRectangle)
 
 glib = CDLL("libpoppler-glib.so.8")
 
 g_free = glib.g_free
-g_free.argtypes = c_voidp,
+g_free.argtypes = (c_voidp,)
 
 
-def page_get_text_layout(page):
+_c_text_layout = glib.poppler_page_get_text_layout
+_c_text_layout.argtypes = (c_voidp, POINTER(CRectangle.ptr), POINTER(c_uint))
+_c_text_layout.restype = c_bool
 
-    fn = glib.poppler_page_get_text_layout
-    fn.argtypes = c_voidp, POINTER(PatchedRectangle.ptr), POINTER(c_uint)
-    fn.restype = c_bool
+
+def poppler_page_get_text_layout(page):
+    """
+    Wrapper of an underlying c-api function not yet exposed by the
+    python-poppler API.
+
+    Returns a list of text rectangles on the pdf `page`
+    """
 
     n = c_uint(0)
-    rects = PatchedRectangle.ptr()
+    rects = CRectangle.ptr()
 
-    # From python-poppler internals, see also the repr(page)
+    # From python-poppler internals it is known that hash(page) returns the
+    # c-pointer to the underlying glib object. See also the repr(page).
     page_ptr = hash(page)
 
-    fn(page_ptr, rects, n)
-    #return []
+    _c_text_layout(page_ptr, rects, n)
 
-    rs = POINTER(PatchedRectangle * n.value).from_address(ctypes.addressof(rects))
-
-    rects = []
-
-    rr = poppler.Rectangle()
+    # Obtain pointer to array of rectangles of the correct length
+    rectangles = POINTER(CRectangle * n.value).from_address(addressof(rects))
 
     result = []
-    for r in rs.contents:
-        rect = (r.x0, r.y0, r.x1, r.y1)
-        rr.x1, rr.y1, rr.x2, rr.y2 = rect
-        text = None
-        tw = None
-        tw = page.get_selected_text(poppler.SELECTION_GLYPH, rr).decode("utf8")
+    for crect in rectangles.contents:
+        rect = Rectangle(x1=crect.x1, y1=crect.y1, x2=crect.x2, y2=crect.y2)
+        result.append(rect)
 
-        if False and result and tw.strip():
-            l, _, _ = last = result[-1]
-            r = rect
-            if (r.x0, r.y0, r.y1) == (l.x1, r.y0, r.y1):
-                nrect = l._replace(x1=r.x1)
-                result[-1] = nrect, None, last[-1] + tw
-
-        #if result and (r.x0, r.y1) == (result[-1].x1, result[-1].y1)
-
-        result.append((rect, text, tw))
-
-    # TODO(pwaller) check that this free is correct
-    g_free(rs)
+    # TODO(pwaller): check that this free is correct
+    g_free(rectangles)
 
     return result

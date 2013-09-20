@@ -20,15 +20,25 @@ segment_histogram
     [(1, 4), (2, 3)] => [(1, 2, 3, 4), (1, 2, 1)]
 """
 
+from __future__ import division
+
 from collections import defaultdict, namedtuple
 from heapq import heappush, heapreplace, heappop
 
 
-class LineSegment(namedtuple("LineSegment", ["start", "end"])):
+class LineSegment(namedtuple("LineSegment", ["start", "end", "object"])):
+
+    def __repr__(self):
+        return 'LineSegment(start={0:6.02f} end={1:6.02f} box={2})'.format(
+            self.start, self.end, self.object)
 
     @property
     def length(self):
         return self.end - self.start
+
+    @property
+    def midpoint(self):
+        return (self.start + self.end) / 2
 
 
 def segments_generator(line_segments):
@@ -50,7 +60,7 @@ def segments_generator(line_segments):
 
     # (Note, this has the effect of sorting line_segments in start order)
     for segment in line_segments:
-        start, end = segment
+        start, end, _ = segment
         if not start < end:
             raise RuntimeError("Malformed line segment input")
         heappush(queue, (start, (segment)))
@@ -63,7 +73,7 @@ def segments_generator(line_segments):
 
         yield position, segment
 
-        start, end = segment
+        start, end, _ = segment
         if position == start:
             # This is the `start` of the line segment. It needs to be
             # considered again at the `end`, so schedule it.
@@ -92,7 +102,7 @@ def histogram_segments(segments):
         (start, seg), (end, _) = this, next
 
         # The (seg_start, seg_end) of the segment being considered
-        seg_start, seg_end = seg
+        seg_start, seg_end, _ = seg
 
         # Did the segment appear or disappear? Key on the segment coordinates
         if start == seg_start:

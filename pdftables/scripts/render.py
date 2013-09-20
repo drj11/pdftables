@@ -22,6 +22,7 @@ Options:
     -O --output-dir=<path>      Path to write debug data to
     -a --ascii                  Show ascii table
     -p --pprint                 pprint.pprint() the table
+    -i --interactive            jump into an interactive debugger (ipython)
 """
 
 # Use $ pip install --editable pdftables
@@ -130,10 +131,15 @@ def render_pdf(arguments, pdf_filename):
 
             print "Rendered", svg_file, png_file
 
+            if arguments["--interactive"]:
+                from ipdb import set_trace
+                set_trace()
+
             for table in table_container:
 
                 if arguments["--ascii"]:
                     print to_string(table.data)
+
                 if arguments["--pprint"]:
                     pprint(table.data)
 

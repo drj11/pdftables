@@ -9,7 +9,7 @@ from os.path import abspath
 
 Point = namedtuple('Point', ['x', 'y'])
 Line = namedtuple('Line', ['start', 'end'])
-Polygon = namedtuple('Polygon', 'lines')
+Polygon = namedtuple('Polygon', 'points')
 Rectangle = namedtuple('Rectangle', ['top_left', 'bottom_right'])
 AnnotationGroup = namedtuple('AnnotationGroup', ['name', 'color', 'shapes'])
 Color = namedtuple('Color', ['red', 'green', 'blue'])
@@ -27,14 +27,14 @@ def draw_line(context, line):
 
 
 def draw_polygon(context, polygon):
-    if len(polygon.lines) == 0:
+    if len(polygon.points) == 0:
         return
 
-    first_line = polygon.lines[0]
+    first_point = polygon.points[0]
 
-    context.move_to(first_line.start.x, first_line.start.y)
-    for line in polygon.lines[1:]:
-        context.line_to(line.start.x, line.start.y)
+    context.move_to(first_point.x, first_point.y)
+    for line in polygon.points[1:]:
+        context.line_to(line.x, line.y)
 
     context.stroke()
 
@@ -77,8 +77,8 @@ class CairoPdfPageRenderer(object):
         # We render everything 3 times, moving
         # one page-width to the right each time.
         self._offset_colors = [
-            (        0, white, white, True),
-            (    width, black, white, True),
+            (0, white, white, True),
+            (width, black, white, True),
             (2 * width, black, black, False)
         ]
 
@@ -105,7 +105,7 @@ class CairoPdfPageRenderer(object):
     def _get_context(filename, width, height):
         SCALE = 1
         # left, middle, right
-        N_RENDERINGS = 3 
+        N_RENDERINGS = 3
 
         surface = cairo.SVGSurface(
             filename, N_RENDERINGS * width * SCALE, height * SCALE)
@@ -266,48 +266,52 @@ def make_glyph_histogram(histogram, box, direction):
         # There are no glyphs, and nothing to render!
         return []
 
-    lines = []
-    polygon = Polygon(lines)
+    points = []
+    polygon = Polygon(points)
 
-    def line(*args):
-        lines.append(Line(*args))
+    def point(x, y):
+        points.append(Point(x, y))
 
+    # def line(*args):
+        # lines.append(Line(*args))
     previous_value = 0 if direction == "horizontal" else box.bottom
 
-    x = zip(bin_edges, bin_edges[1:], bin_values)
-    for first_edge, second_edge, value in x:
+    x = zip(bin_edges, bin_values)
+    for edge, value in x:
 
         if direction == "horizontal":
             value *= 0.75
             value = box.bottom - value
 
-            line(Point(first_edge, previous_value), Point(first_edge, value))
-            line(Point(first_edge, value), Point(second_edge, value))
+            point(edge, previous_value)
+            point(edge, value)
 
         else:
             value *= 0.25
             value += 7  # shift pixels to the right
 
-            line(Point(previous_value, first_edge), Point(value, first_edge))
-            line(Point(value, first_edge), Point(value, second_edge))
+            point(previous_value, edge)
+            point(value, edge)
 
         previous_value = value
 
+    # Final point is at 0
     if direction == "horizontal":
-        line(Point(second_edge, value), Point(second_edge, 0))
+        point(edge, 0)
     else:
-        line(Point(value, second_edge), Point(0, second_edge))
+        point(box.bottom, edge)
 
-    lines = []
-    if direction == "horizontal":
-        for edge in bin_edges:
-            lines.append(Line(Point(edge, box.bottom),
-                              Point(edge, box.bottom + 5)))
-    else:
-        for edge in bin_edges:
-            lines.append(Line(Point(0, edge), Point(5, edge)))
-
-    return [polygon] + lines
+    # Draw edge density plot (not terribly interesting, should probably be
+    #  deleted)
+    # lines = []
+    # if direction == "horizontal":
+    #     for edge in bin_edges:
+    #         lines.append(Line(Point(edge, box.bottom),
+    #                           Point(edge, box.bottom + 5)))
+    # else:
+    #     for edge in bin_edges:
+    #         lines.append(Line(Point(0, edge), Point(5, edge)))
+    return [polygon]  # + lines
 
 
 def convert_rectangles(boxes):

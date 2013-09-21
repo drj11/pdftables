@@ -34,7 +34,7 @@ class Rectangle(namedtuple("Rectangle", "x1 y1 x2 y2")):
     def __repr__(self):
         return (
             "Rectangle(x1={0:6.02f} y1={1:6.02f} x2={2:6.02f} y2={3:6.02f})"
-            .format(*self))
+            .format(self.x1, self.y1, self.x2, self.y2))
 
 
 class Box(object):
@@ -47,21 +47,6 @@ class Box(object):
         self.rect = rect
         self.text = text
 
-        return
-        # TODO(pwaller): simplify and reconcile this constructor
-
-        if type(obj) == tuple:
-            (self.rect, self.classname, self.text) = obj
-        else:
-            if obj.__class__.__name__ != 'LTAnon':
-                self.rect = obj.rect
-            else:
-                self.rect = (0, 0, 0, 0)
-            self.classname = obj.__class__.__name__
-            try:
-                self.text = obj.get_text()
-            except:
-                self.text = ''
 
     def __repr__(self):
         if self is Box.empty_box:

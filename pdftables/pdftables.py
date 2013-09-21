@@ -29,7 +29,8 @@ from operator import attrgetter
 
 from .boxes import Box, BoxList, Rectangle
 from .config_parameters import ConfigParameters
-from .line_segments import segment_histogram, above_threshold
+from .line_segments import (segment_histogram, above_threshold, hat_generator,
+                            find_peaks)
 from .pdf_document import PDFDocument, PDFPage
 
 IS_TABLE_COLUMN_COUNT_THRESHOLD = 3
@@ -216,6 +217,27 @@ def page_to_tables(pdf_page, config=None):
         xs = table._x_threshold_segs = above_threshold(xs, 3)
         ys = table._y_threshold_segs = above_threshold(ys, 5)
 
+        _ = hat_generator(table._v_segments,
+                          value_function=normal_hat_with_max_length)
+        table._y_hats = list(_)
+
+        if table._y_hats:
+            points, values_maxlengths = zip(*table._y_hats)
+            values, max_lengths = zip(*values)
+
+            point_values = zip(points, values)
+
+            # y-positions of "good" center lines vertically
+            # ("good" is determined using the /\ ("hat") function)
+            table._center_lines = list(find_peaks(point_values))
+
+            # mapping of y-position (at each hat-point) to maximum glyph
+            # height over that point
+            table._baseline_maxheights = dict(zip(points, max_lengths))
+        else:
+            table._center_lines = []
+            table._baseline_maxheights = {}
+
         # Compute edges (the set of edges used to be called a 'comb')
         edges = compute_cell_edges(box, xs, ys, config)
         table.column_edges, table.row_edges = edges
@@ -325,7 +347,7 @@ def compute_table_data(table):
         result = []
         sorted_boxes = sorted(boxes, key=ordering)
 
-        for this, next in zip(sorted_boxes, sorted_boxes[1:]+[None]):
+        for this, next in zip(sorted_boxes, sorted_boxes[1:] + [None]):
             result.append(this.text)
             if next is None:
                 continue

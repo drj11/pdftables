@@ -216,6 +216,14 @@ def make_annotations(table_container):
 
         annotations.append(
             AnnotationGroup(
+                name='hat_graph_vertical',
+                color=Color(0, 1, 0),
+                shapes=make_hat_graph(
+                    table._y_hats, table._center_lines,
+                    direction="vertical")))
+
+        annotations.append(
+            AnnotationGroup(
                 name='horizontal_glyph_above_threshold',
                 color=Color(0, 0, 0),
                 shapes=make_thresholds(
@@ -253,6 +261,31 @@ def make_thresholds(segments, box, direction):
                               Point(10, segment.end)))
 
     return lines
+
+
+def make_hat_graph(hats, center_lines, direction):
+    """
+    Draw estimated text baseline
+    """
+
+    max_value = max(v for _, v in hats)
+    DISPLAY_WIDTH = 25
+
+    points = []
+    polygon = Polygon(points)
+
+    def point(x, y):
+        points.append(Point(x, y))
+
+    for position, value in hats:
+        point(((value / max_value - 1) * DISPLAY_WIDTH), position)
+
+    lines = []
+    for position in center_lines:
+        lines.append(Line(Point(-DISPLAY_WIDTH, position),
+                          Point(0, position)))
+
+    return [polygon] + lines
 
 
 def make_glyph_histogram(histogram, box, direction):

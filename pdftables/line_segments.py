@@ -224,14 +224,47 @@ def hat(segment, position):
     return max(0, 1 - h)
 
 
-def hat_generator(line_segments):
+def normal_hat(position, active_segments):
     """
-    The hat generator returns the sum of `hat` at each position where any
-    line segment's `start`, `midpoint` or `end` is.
+    The ``normal_hat`` is the sum of the hat function for all active segments
+    at this position
+    """
+    return sum(hat(s, position) for s in active_segments)
+
+
+def max_length(position, active_segments):
+    """
+    Returns the maximum length of any segment overlapping ``position``
+    """
+    if not active_segments:
+        return None
+    return max(s.length for s in active_segments)
+
+
+def normal_hat_with_max_length(position, active_segments):
+    """
+    Obtain both the hat value and the length of the largest line segment
+    overlapping each "hat position".
+    """
+
+    return (normal_hat(position, active_segments),
+            max_length(position, active_segments))
+
+
+def hat_generator(line_segments, value_function=normal_hat):
+    """
+    The purpose of this function is to determine where it might be effective
+    to clamp text to for the purposes of text visitation order.
+
+    The hat generator returns the sum of ``hat`` at each position where any
+    line segment's ``start``, ``midpoint`` or ``end`` is.
+
+    ``value_function`` can be used to obtain different kinds of information
+    from the ``hat_point_generator``'s points.
     """
 
     for position, active_segments in hat_point_generator(line_segments):
-        yield position, sum(hat(s, position) for s in active_segments)
+        yield position, normal_hat(active_segments)
 
 
 def segment_histogram(line_segments):
@@ -276,3 +309,34 @@ def above_threshold(histogram, threshold):
             above_threshold.append(LineSegment(first, second, None))
 
     return above_threshold
+
+
+def find_peaks(position_values):
+    """
+    Find all points in a peaky graph which are local maxima.
+
+    This function assumes that the very first and last points can't be peaks.
+    """
+
+    # Initial value is zero, up is the only direction from here!
+    increasing = True
+
+    # The loop has two states. Either we're going up, in which case when we see
+    # a next value less than the current one, we must be at the top. At which
+    # point it's down hill and all next values will be less than the current
+    # one. Until the bottom is reached, at which point we're increasing again.
+
+    # Note that the last `position` can never be yielded.
+
+    _ = zip(position_values, position_values[1:])
+    for (position, value), (_, next_value) in _:
+        if increasing:
+            if next_value < value:
+                # position is a peak
+                increasing = False
+                yield position
+
+        else:
+            if next_value > value:
+                # position is a trough
+                increasing = True

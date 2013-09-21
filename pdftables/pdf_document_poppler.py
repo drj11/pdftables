@@ -2,6 +2,8 @@ from ctypes import CDLL, POINTER, c_voidp, c_double, c_uint, c_bool
 from ctypes import Structure, addressof, pointer
 from os.path import abspath
 
+
+import cairo
 import gobject
 try:
     import poppler
@@ -23,6 +25,7 @@ class PDFDocument(BasePDFDocument):
 
     def __init__(self, file_path, password=""):
         uri = "file://{0}".format(abspath(file_path))
+        # TODO(pwaller): self._poppler => self._poppler_page
         self._poppler = poppler.document_new_from_file(uri, password)
 
     def __len__(self):
@@ -45,9 +48,29 @@ class PDFPage(BasePDFPage):
         return self._poppler.get_size()
 
     def get_glyphs(self):
+        gtl = patched_poppler.poppler_page_get_text_layout
+        rectangles = gtl(self._poppler)
+
+        return BoxList(rectangles)
+
+        # TODO(pwaller): Salvage this.
+        #
+        # Poppler seems to lie to us because the assertion below fails.
+        # It should return the same number of rectangles as there are
+        # characters in the text, but it does not.
+        # See:
+        #
+        # http://www.mail-archive.com/poppler
+        #        @lists.freedesktop.org/msg06245.html
+        # https://github.com/scraperwiki/pdftables/issues/89
+        # https://bugs.freedesktop.org/show_bug.cgi?id=69608
 
         text = self._poppler.get_text().decode("utf8")
-        rectangles = patched_poppler.poppler_page_get_text_layout(self._poppler)
+
+        # assert len(text) == len(rectangles), (
+        #     "t={0}, r={1}".format(len(text), len(rectangles)))
+
+        # assert False
 
         return BoxList(Box(rect=rect, text=character)
                        for rect, character in zip(rectangles, text))

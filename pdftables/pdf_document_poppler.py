@@ -25,11 +25,10 @@ class PDFDocument(BasePDFDocument):
 
     def __init__(self, file_path, password=""):
         uri = "file://{0}".format(abspath(file_path))
-        # TODO(pwaller): self._poppler => self._poppler_page
-        self._poppler = poppler.document_new_from_file(uri, password)
+        self._poppler_page = poppler.document_new_from_file(uri, password)
 
     def __len__(self):
-        return self._poppler.get_n_pages()
+        return self._poppler_page.get_n_pages()
 
     def get_page(self, n):
         return PDFPage(self, n)
@@ -41,15 +40,15 @@ class PDFDocument(BasePDFDocument):
 class PDFPage(BasePDFPage):
 
     def __init__(self, doc, n):
-        self._poppler = doc._poppler.get_page(n)
+        self._poppler_page = doc._poppler_page.get_page(n)
 
     @property
     def size(self):
-        return self._poppler.get_size()
+        return self._poppler_page.get_size()
 
     def get_glyphs(self):
         gtl = patched_poppler.poppler_page_get_text_layout
-        rectangles = gtl(self._poppler)
+        rectangles = gtl(self._poppler_page)
 
         return BoxList(rectangles)
 
@@ -65,7 +64,7 @@ class PDFPage(BasePDFPage):
         # https://github.com/scraperwiki/pdftables/issues/89
         # https://bugs.freedesktop.org/show_bug.cgi?id=69608
 
-        text = self._poppler.get_text().decode("utf8")
+        text = self._poppler_page.get_text().decode("utf8")
 
         # assert len(text) == len(rectangles), (
         #     "t={0}, r={1}".format(len(text), len(rectangles)))

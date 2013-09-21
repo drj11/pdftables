@@ -27,10 +27,10 @@ from counter import Counter
 from cStringIO import StringIO
 from operator import attrgetter
 
-from boxes import Box, BoxList, Rectangle
-from config_parameters import ConfigParameters
-from linesegments import segment_histogram, above_threshold
-from pdf_document import PDFDocument, PDFPage
+from .boxes import Box, BoxList, Rectangle
+from .config_parameters import ConfigParameters
+from .line_segments import segment_histogram, above_threshold
+from .pdf_document import PDFDocument, PDFPage
 
 IS_TABLE_COLUMN_COUNT_THRESHOLD = 3
 IS_TABLE_ROW_COUNT_THRESHOLD = 3

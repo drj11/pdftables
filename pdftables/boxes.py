@@ -10,7 +10,7 @@ from __future__ import unicode_literals
 from collections import namedtuple
 from counter import Counter
 
-from .linesegments import LineSegment
+from .line_segments import LineSegment
 
 
 def _rounder(val, tol):

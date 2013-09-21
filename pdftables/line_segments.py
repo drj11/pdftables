@@ -66,8 +66,14 @@ def segments_generator(line_segments, to_visit=start_end):
              (3, (2, 3), True),
              (4, (1, 4), True)]
 
-    The function `to_visit` specifies which positions will be visited for each
-    segment and may be `start_end` or `start_middle_end`.
+    The function ``to_visit`` specifies which positions will be visited for
+    each segment and may be ``start_end`` or ``start_middle_end``.
+
+    If ``to_visit`` is a dictionary instance, it is a mapping from
+    ``type(segment)`` onto a visit function. This allows passing in both
+    line segments and points which should be visited simultaneously, for
+    example, to classify points according to which line segments are currently
+    overlapped.
     """
 
     # Queue contains a list of outstanding segments to process. It is a list
@@ -76,8 +82,14 @@ def segments_generator(line_segments, to_visit=start_end):
     # to be considered again.
     queue = []
 
+    _to_visit = to_visit
+
     # (Note, this has the effect of sorting line_segments in start order)
     for segment in line_segments:
+        if isinstance(to_visit, dict):
+            _to_visit = to_visit[type(segment)]
+
+        # an iterator representing the points to visit for this segment
         points_to_visit = to_visit(segment)
         try:
             start = points_to_visit.next()
@@ -94,16 +106,16 @@ def segments_generator(line_segments, to_visit=start_end):
         position, points_to_visit, segment = heappop(queue)
 
         try:
-            next_position = points_to_visit.next()
-            if next_position < position:
+            point_next_position = points_to_visit.next()
+            if point_next_position < position:
                 raise RuntimeError("Malformed input: next={0} < pos={1}"
-                                   .format(next_position, position))
+                                   .format(point_next_position, position))
         except StopIteration:
             # No more points for this segment
             disappearing = True
         else:
             disappearing = False
-            heappush(queue, (next_position, points_to_visit, segment))
+            heappush(queue, (point_next_position, points_to_visit, segment))
 
         yield position, segment, disappearing
 

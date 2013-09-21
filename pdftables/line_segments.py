@@ -28,6 +28,10 @@ from heapq import heappush, heapreplace, heappop
 
 class LineSegment(namedtuple("LineSegment", ["start", "end", "object"])):
 
+    @classmethod
+    def make(cls, start, end, obj=None):
+        return cls(start, end, obj)
+
     def __repr__(self):
         return 'LineSegment(start={0:6.04f} end={1:6.04f} box={2})'.format(
             self.start, self.end, self.object)
@@ -91,6 +95,9 @@ def segments_generator(line_segments, to_visit=start_end):
 
         try:
             next_position = points_to_visit.next()
+            if next_position < position:
+                raise RuntimeError("Malformed input: next={0} < pos={1}"
+                                   .format(next_position, position))
         except StopIteration:
             # No more points for this segment
             disappearing = True
@@ -121,9 +128,6 @@ def histogram_segments(segments):
 
         # (start, end) is the range until the next segment
         (start, seg, disappearing), (end, _, _) = this, next
-
-        # The (seg_start, seg_end) of the segment being considered
-        seg_start, seg_end, _ = seg
 
         # Did the segment appear or disappear? Key on the segment coordinates
         if not disappearing:

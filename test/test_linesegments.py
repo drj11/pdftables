@@ -3,31 +3,35 @@ import pdftables.line_segments as line_segments
 from nose.tools import assert_equals, raises
 
 
+def segments(segments):
+    return [line_segments.LineSegment.make(a, b) for a, b in segments]
+
+
 def test_segments_generator():
-    values = list(line_segments.segments_generator([(1, 4), (2, 3)]))
-    assert_equals([(1, (1, 4)), (2, (2, 3)), (3, (2, 3)), (4, (1, 4))], values)
+    seg1, seg2 = segs = segments([(1, 4), (2, 3)])
+    values = list(line_segments.segments_generator(segs))
+    assert_equals(
+        [(1, seg1, False),
+         (2, seg2, False),
+         (3, seg2, True),
+         (4, seg1, True)],
+        values
+    )
 
 
 def test_histogram_segments():
-    values = list(line_segments.histogram_segments([(1, 4), (2, 3)]))
+    segs = segments([(1, 4), (2, 3)])
+    values = list(line_segments.histogram_segments(segs))
     assert_equals([((1, 2), 1), ((2, 3), 2), ((3, 4), 1)], values)
 
 
 def test_segment_histogram():
-    values = list(line_segments.segment_histogram([(1, 4), (2, 3)]))
+    segs = segments([(1, 4), (2, 3)])
+    values = list(line_segments.segment_histogram(segs))
     assert_equals([(1, 2, 3, 4), (1, 2, 1)], values)
 
 
 @raises(RuntimeError)
 def test_malformed_input_segments_generator():
-    list(line_segments.segments_generator([(1, -1)]))
-
-
-@raises(RuntimeError)
-def test_malformed_input_histogram_segments():
-    list(line_segments.histogram_segments([(1, -1)]))
-
-
-@raises(RuntimeError)
-def test_malformed_input_segment_histogram():
-    list(line_segments.segment_histogram([(1, 1)]))
+    segs = segments([(1, -1)])
+    list(line_segments.segments_generator(segs))

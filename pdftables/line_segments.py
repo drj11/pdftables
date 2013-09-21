@@ -33,7 +33,7 @@ class LineSegment(namedtuple("LineSegment", ["start", "end", "object"])):
         return cls(start, end, obj)
 
     def __repr__(self):
-        return 'LineSegment(start={0:6.04f} end={1:6.04f} box={2})'.format(
+        return 'LineSegment(start={0:6.04f} end={1:6.04f} object={2})'.format(
             self.start, self.end, self.object)
 
     @property

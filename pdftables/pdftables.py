@@ -203,20 +203,21 @@ def page_to_tables(pdf_page, config=None):
                                "That shouldn't happen.")
 
         # Fetch line-segments
+
         # h is lines with fixed y, multiple x values
         # v is lines with fixed x, multiple y values
-        table._h_segments, table._v_segments = table.glyphs.line_segments()
+        table._x_segments, table._y_segments = table.glyphs.line_segments()
 
         # Histogram them
-        h = table._h_glyph_histogram = segment_histogram(table._h_segments)
-        v = table._v_glyph_histogram = segment_histogram(table._v_segments)
+        xs = table._x_glyph_histogram = segment_histogram(table._x_segments)
+        ys = table._y_glyph_histogram = segment_histogram(table._y_segments)
 
         # Threshold them
-        h = table._h_threshold_segs = above_threshold(h, 3)
-        v = table._v_threshold_segs = above_threshold(v, 5)
+        xs = table._x_threshold_segs = above_threshold(xs, 3)
+        ys = table._y_threshold_segs = above_threshold(ys, 5)
 
         # Compute edges (the set of edges used to be called a 'comb')
-        edges = compute_cell_edges(box, h, v, config)
+        edges = compute_cell_edges(box, xs, ys, config)
         table.column_edges, table.row_edges = edges
 
         if table.column_edges and table.row_edges:

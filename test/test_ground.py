@@ -31,7 +31,8 @@ def pdf_results(filename):
                 cells.update([cell])
         return cells
 
-    doc = PDFDocument.from_fileobj(open(filename, "rb"))
+    #doc = PDFDocument.from_fileobj(open(filename, "rb"))
+    doc = PDFDocument.from_path(filename)
     for page in doc.get_pages():
         table_container = page_to_tables(page)
         builder = []

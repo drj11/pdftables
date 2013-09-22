@@ -1,20 +1,14 @@
 #!/usr/bin/env python
-# ScraperWiki Limited
-# Ian Hopkinson, 2013-06-20
 # -*- coding: utf-8 -*-
 
-"""
-boxes Tests
-"""
-
-import sys
-sys.path.append('pdftables')
+#import sys
+#sys.path.append('pdftables')
 
 import pdftables
 import pdftables.boxes as boxes
 
 
-from boxes import Box, BoxList, Rectangle
+from pdftables.boxes import Box, BoxList, Rectangle
 
 from nose.tools import assert_equals, assert_is_not
 

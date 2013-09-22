@@ -5,32 +5,34 @@ import shutil
 import glob
 from nose.tools import with_setup
 
+# TODO(pwaller): Don't write test data to png/svg.
+
+PDF_FILE = 'fixtures/sample_data/unica_preco_recebido.pdf'
 
 def clean_output_directories():
-    sys.argv[1] = 'fixtures/sample_data/unica_preco_recebido.pdf'
     shutil.rmtree('png', ignore_errors=True)
     shutil.rmtree('svg', ignore_errors=True)
 
 @with_setup(clean_output_directories)
 def test_png_output_directory_is_created():
     assert not os.path.isdir('png')
-    main()
+    main([PDF_FILE])
     assert os.path.isdir('png')
 
 @with_setup(clean_output_directories)
 def test_svg_output_directory_is_created():
     assert not os.path.isdir('svg')
-    main()
+    main([PDF_FILE])
     assert os.path.isdir('svg')
 
 @with_setup(clean_output_directories)
 def test_expected_png_output():
-    main()
+    main([PDF_FILE])
     assert os.path.isfile('png/unica_preco_recebido.pdf_00.png')
 
 @with_setup(clean_output_directories)
 def test_expected_svg_output():
-    main()
+    main([PDF_FILE])
     assert os.path.isfile('svg/unica_preco_recebido.pdf_00.svg')
 
 # Some of the fixture pdfs
@@ -48,8 +50,7 @@ PDF_FILES = [
 @with_setup(clean_output_directories)
 def test_expected_number_of_pages():
     for infile, expected_pages in PDF_FILES:
-        sys.argv[1] = infile
-        main()
+        main([infile])
 
         actual_pages = len(glob.glob('svg/%s_*.svg' % os.path.basename(infile)))
         assert expected_pages == actual_pages

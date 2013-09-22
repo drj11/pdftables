@@ -43,8 +43,17 @@ from pdftables.display import to_string
 from pdftables.pdftables import page_to_tables
 
 
-def main():
-    arguments = docopt(__doc__, version='pdftables-render experimental')
+def main(args=None):
+
+    if args is not None:
+        argv = args
+    else:
+        argv = sys.argv[1:]
+
+    arguments = docopt(
+        __doc__,
+        argv=argv,
+        version='pdftables-render experimental')
 
     if arguments["--debug"]:
         print(arguments)

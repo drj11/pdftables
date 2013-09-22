@@ -196,6 +196,12 @@ def page_to_tables(pdf_page, config=None):
 
         table.glyphs = tables.all_glyphs.inside(box)
 
+        if len(table.glyphs) == 0:
+            # If this happens, then find_bounding_boxes returned somewhere with
+            # no glyphs inside it. Wat.
+            raise RuntimeError("This is an empty table bounding box. "
+                               "That shouldn't happen.")
+
         # Fetch line-segments
         # h is lines with fixed y, multiple x values
         # v is lines with fixed x, multiple y values

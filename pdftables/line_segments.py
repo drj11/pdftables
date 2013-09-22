@@ -276,7 +276,7 @@ def hat_generator(line_segments, value_function=normal_hat):
     """
 
     for position, active_segments in hat_point_generator(line_segments):
-        yield position, normal_hat(active_segments)
+        yield position, value_function(position, active_segments)
 
 
 def segment_histogram(line_segments):

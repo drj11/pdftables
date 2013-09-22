@@ -30,7 +30,7 @@ from operator import attrgetter
 from .boxes import Box, BoxList, Rectangle
 from .config_parameters import ConfigParameters
 from .line_segments import (segment_histogram, above_threshold, hat_generator,
-                            find_peaks)
+                            find_peaks, normal_hat_with_max_length)
 from .pdf_document import PDFDocument, PDFPage
 
 IS_TABLE_COLUMN_COUNT_THRESHOLD = 3
@@ -219,13 +219,13 @@ def page_to_tables(pdf_page, config=None):
 
         _ = hat_generator(table._v_segments,
                           value_function=normal_hat_with_max_length)
-        table._y_hats = list(_)
+        table._y_hat_points = list(_)
 
-        if table._y_hats:
-            points, values_maxlengths = zip(*table._y_hats)
-            values, max_lengths = zip(*values)
+        if table._y_hat_points:
+            points, values_maxlengths = zip(*table._y_hat_points)
+            values, max_lengths = zip(*values_maxlengths)
 
-            point_values = zip(points, values)
+            table._y_hats = point_values = zip(points, values)
 
             # y-positions of "good" center lines vertically
             # ("good" is determined using the /\ ("hat") function)
@@ -235,6 +235,7 @@ def page_to_tables(pdf_page, config=None):
             # height over that point
             table._baseline_maxheights = dict(zip(points, max_lengths))
         else:
+            table._y_hats = []
             table._center_lines = []
             table._baseline_maxheights = {}
 

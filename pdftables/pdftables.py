@@ -150,6 +150,15 @@ def page_contains_tables(pdf_page):
         raise TypeError("Page must be PDFPage, not {}".format(
             pdf_page.__class__))
 
+    # TODO(pwaller):
+    #
+    # I would prefer if this function was defined in terms of `page_to_tables`
+    # so that the logic cannot diverge.
+    #
+    # What should the test be?
+    #   len(page_to_tables(page)) > 0?
+    #   Number of tables left after filtering ones that have no data > 0?
+
     box_list = pdf_page.get_glyphs()
 
     boxtop = attrgetter("top")

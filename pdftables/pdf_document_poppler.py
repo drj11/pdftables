@@ -45,6 +45,8 @@ class PDFPage(BasePDFPage):
         return self._poppler.get_size()
 
     def get_glyphs(self):
+        # TODO(pwaller): Result of this should be memoized onto the PDFPage
+        #                instance.
 
         text = self._poppler.get_text().decode("utf8")
         rectangles = patched_poppler.poppler_page_get_text_layout(self._poppler)

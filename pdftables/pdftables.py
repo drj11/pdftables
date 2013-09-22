@@ -217,27 +217,12 @@ def page_to_tables(pdf_page, config=None):
         xs = table._x_threshold_segs = above_threshold(xs, 3)
         ys = table._y_threshold_segs = above_threshold(ys, 5)
 
-        _ = hat_generator(table._v_segments,
-                          value_function=normal_hat_with_max_length)
-        table._y_hat_points = list(_)
-
-        if table._y_hat_points:
-            points, values_maxlengths = zip(*table._y_hat_points)
-            values, max_lengths = zip(*values_maxlengths)
-
-            table._y_hats = point_values = zip(points, values)
-
-            # y-positions of "good" center lines vertically
-            # ("good" is determined using the /\ ("hat") function)
-            table._center_lines = list(find_peaks(point_values))
-
-            # mapping of y-position (at each hat-point) to maximum glyph
-            # height over that point
-            table._baseline_maxheights = dict(zip(points, max_lengths))
-        else:
-            table._y_hats = []
-            table._center_lines = []
-            table._baseline_maxheights = {}
+        # Find candidate text centerlines and compute some properties of them.
+        (table._y_point_values,
+         table._center_lines,
+         table._baseline_maxheights) = (
+             determine_text_centerlines(table._v_segments)
+         )
 
         # Compute edges (the set of edges used to be called a 'comb')
         edges = compute_cell_edges(box, xs, ys, config)
@@ -251,6 +236,34 @@ def page_to_tables(pdf_page, config=None):
         tables.add(table)
 
     return tables
+
+
+def determine_text_centerlines(v_segments):
+    """
+    Find candidate centerlines to snap glyphs to.
+    """
+
+    _ = hat_generator(v_segments, value_function=normal_hat_with_max_length)
+    y_hat_points = list(_)
+
+    if not y_hat_points:
+        # No text on the page?
+        return [], [], []
+
+    points, values_maxlengths = zip(*y_hat_points)
+    values, max_lengths = zip(*values_maxlengths)
+
+    point_values = zip(points, values)
+
+    # y-positions of "good" center lines vertically
+    # ("good" is determined using the /\ ("hat") function)
+    center_lines = list(find_peaks(point_values))
+
+    # mapping of y-position (at each hat-point) to maximum glyph
+    # height over that point
+    baseline_maxheights = dict(zip(points, max_lengths))
+
+    return point_values, center_lines, baseline_maxheights
 
 
 def find_bounding_boxes(glyphs, config):

@@ -219,7 +219,7 @@ def make_annotations(table_container):
                 name='hat_graph_vertical',
                 color=Color(0, 1, 0),
                 shapes=make_hat_graph(
-                    table._y_hats, table._center_lines,
+                    table._y_point_values, table._center_lines,
                     direction="vertical")))
 
         annotations.append(

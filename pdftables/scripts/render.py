@@ -25,7 +25,7 @@ Options:
     -i --interactive            jump into an interactive debugger (ipython)
 """
 
-# Use $ pip install --editable pdftables
+# Use $ pip install --user --editable pdftables
 # to install this util in your path.
 
 import sys

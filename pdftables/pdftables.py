@@ -10,7 +10,8 @@ Some help here:
 http://denis.papathanasiou.org/2010/08/04/extracting-text-images-from-pdf-files
 """
 
-# TODO(IanHopkinson) Identify multi-column text, for multicolumn text detect per column
+# TODO(IanHopkinson) Identify multi-column text, for multicolumn text detect
+#                    per column
 # TODO(IanHopkinson) Dynamic / smarter thresholding
 # TODO(IanHopkinson) Handle argentina_diputados_voting_record.pdf automatically
 # TODO(IanHopkinson) Handle multiple tables on one page
@@ -33,7 +34,9 @@ from operator import attrgetter
 from .boxes import Box, BoxList, Rectangle
 from .config_parameters import ConfigParameters
 from .line_segments import (segment_histogram, above_threshold, hat_generator,
-                            find_peaks, normal_hat_with_max_length)
+                            find_peaks, normal_hat_with_max_length,
+                            midpoint, start_end, LineSegment,
+                            segments_generator)
 from .pdf_document import PDFDocument, PDFPage
 
 IS_TABLE_COLUMN_COUNT_THRESHOLD = 3
@@ -192,6 +195,19 @@ def page_to_tables(pdf_page, config=None):
     tables.original_page = pdf_page
     tables.page_size = pdf_page.size
     tables.all_glyphs = pdf_page.get_glyphs()
+
+    tables._x_segments, tables._y_segments = tables.all_glyphs.line_segments()
+    # Find candidate text centerlines and compute some properties of them.
+    (tables._y_point_values,
+     tables._center_lines,
+     tables._baseline_maxheights) = (
+         determine_text_centerlines(tables._y_segments)
+     )
+
+    assign_baselines(tables._y_segments,
+                     tables._center_lines,
+                     tables._baseline_maxheights)
+
     tables.bounding_boxes = find_bounding_boxes(tables.all_glyphs, config)
 
     for box in tables.bounding_boxes:
@@ -210,6 +226,8 @@ def page_to_tables(pdf_page, config=None):
 
         # h is lines with fixed y, multiple x values
         # v is lines with fixed x, multiple y values
+        # TODO(pwaller): compute for whole page, then get subset belonging to
+        # this table.
         table._x_segments, table._y_segments = table.glyphs.line_segments()
 
         # Histogram them
@@ -219,13 +237,6 @@ def page_to_tables(pdf_page, config=None):
         # Threshold them
         xs = table._x_threshold_segs = above_threshold(xs, 3)
         ys = table._y_threshold_segs = above_threshold(ys, 5)
-
-        # Find candidate text centerlines and compute some properties of them.
-        (table._y_point_values,
-         table._center_lines,
-         table._baseline_maxheights) = (
-             determine_text_centerlines(table._y_segments)
-         )
 
         # Compute edges (the set of edges used to be called a 'comb')
         edges = compute_cell_edges(box, xs, ys, config)
@@ -264,7 +275,10 @@ def determine_text_centerlines(v_segments):
 
     # mapping of y-position (at each hat-point) to maximum glyph
     # height over that point
-    baseline_maxheights = dict(zip(points, max_lengths))
+    baseline_maxheights = dict(
+        (baseline, maxheight)
+        for baseline, maxheight in zip(points, max_lengths)
+        if maxheight is not None)
 
     return point_values, center_lines, baseline_maxheights
 
@@ -473,3 +487,41 @@ def find_table_bounding_box(box_list, table_top_hint, table_bottom_hint):
     hinted_bounds = hints_y()
 
     return bounds.clip(threshold_bounds, hinted_bounds)
+
+
+class Baseline(LineSegment):
+    pass
+
+
+def assign_baselines(y_segments, baselines, baseline_heightmap):
+    """
+    Assign the glyph.baseline and .baseline_y to their "preferred" baseline.
+    "Preferred" is currently defined as closest 
+    """
+    result = list()
+    # Compute a list of baseline line segments
+    for baseline in baselines:
+        maxheight = baseline_heightmap[baseline]
+        result.append(Baseline.make(baseline - maxheight / 2,
+                                    baseline + maxheight / 2))
+
+    to_visit = {LineSegment: midpoint, Baseline: start_end}
+
+    active_baselines = set()
+
+    segments = segments_generator(result + y_segments, to_visit)
+    for position, glyph, disappearing in segments:
+        # Maintain a list of baselines vs position
+        if isinstance(glyph, Baseline):
+            if not disappearing:
+                active_baselines.add(glyph)
+            else:
+                active_baselines.remove(glyph)
+            continue
+
+        # Pick the baseline closest to our position (== glyph.center_y)
+        baseline = min(active_baselines,
+                       key=lambda b: abs(b.midpoint - position))
+
+        glyph.object.baseline = baseline
+        glyph.object.baseline_y = baseline.midpoint

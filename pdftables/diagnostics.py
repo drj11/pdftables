@@ -188,6 +188,21 @@ def make_annotations(table_container):
             color=Color(0, 1, 0),
             shapes=convert_rectangles(table_container.all_glyphs)))
 
+    annotations.append(
+        AnnotationGroup(
+            name='text_baselines',
+            color=Color(0, 0, 1),
+            shapes=convert_baselines(table_container.all_glyphs)))
+
+    annotations.append(
+        AnnotationGroup(
+            name='hat_graph_vertical',
+            color=Color(0, 1, 0),
+            shapes=make_hat_graph(
+                table_container._y_point_values,
+                table_container._center_lines,
+                direction="vertical")))
+
     for table in table_container:
         annotations.append(
             AnnotationGroup(
@@ -217,14 +232,6 @@ def make_annotations(table_container):
                 color=Color(1, 0, 0),
                 shapes=make_glyph_histogram(
                     table._y_glyph_histogram, table.bounding_box,
-                    direction="vertical")))
-
-        annotations.append(
-            AnnotationGroup(
-                name='hat_graph_vertical',
-                color=Color(0, 1, 0),
-                shapes=make_hat_graph(
-                    table._y_point_values, table._center_lines,
                     direction="vertical")))
 
         annotations.append(
@@ -355,6 +362,12 @@ def make_glyph_histogram(histogram, box, direction):
 def convert_rectangles(boxes):
     return [Rectangle(Point(b.left, b.top), Point(b.right, b.bottom))
             for b in boxes]
+
+
+def convert_baselines(boxes):
+    return [Line(Point(b.left, b.baseline.midpoint),
+                 Point(b.right, b.baseline.midpoint))
+            for b in boxes if b.baseline is not None]
 
 
 def convert_horizontal_lines(y_edges, bbox):

@@ -41,6 +41,7 @@ from pdftables.pdf_document import PDFDocument
 from pdftables.diagnostics import render_page, make_annotations
 from pdftables.display import to_string
 from pdftables.pdftables import page_to_tables
+from pdftables.config_parameters import ConfigParameters
 
 
 def main(args=None):
@@ -58,8 +59,10 @@ def main(args=None):
     if arguments["--debug"]:
         print(arguments)
 
+    config = ConfigParameters()
+
     for pdf_filename in arguments["<pdfpath>"]:
-        render_pdf(arguments, pdf_filename)
+        render_pdf(arguments, pdf_filename, config)
 
 
 def ensure_dirs():
@@ -104,7 +107,7 @@ def parse_page_ranges(range_string, npages):
     return [x - 1 for x in result]
 
 
-def render_pdf(arguments, pdf_filename):
+def render_pdf(arguments, pdf_filename, config):
     ensure_dirs()
 
     page_range_string = ''
@@ -127,7 +130,7 @@ def render_pdf(arguments, pdf_filename):
         png_file = 'png/{0}_{1:02d}.png'.format(
             basename(pdf_filename), page_number)
 
-        table_container = page_to_tables(page)
+        table_container = page_to_tables(page, config)
         annotations = make_annotations(table_container)
 
         render_page(

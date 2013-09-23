@@ -1,2 +1,2 @@
 from pdftables import *
-from config_parameters import ConfigParameters
+from .config_parameters import ConfigParameters

@@ -525,3 +525,5 @@ def assign_baselines(y_segments, baselines, baseline_heightmap):
 
         glyph.object.baseline = baseline
         glyph.object.baseline_y = baseline.midpoint
+
+

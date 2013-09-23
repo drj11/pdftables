@@ -174,6 +174,30 @@ def page_contains_tables(pdf_page):
     return len(test) > IS_TABLE_ROW_COUNT_THRESHOLD
 
 
+def make_words(glyphs):
+    """
+    A word is a series of glyphs which are visually connected to each other.
+    """
+
+    def ordering(box):
+        assert box.baseline_y is not None, (
+            "Box belongs to no baseline. Has assign_baselines been run?")
+        return (box.baseline_y, box.center_x)
+
+    words = []
+    glyphs = [g for g in glyphs if g.baseline_y is not None]
+
+    for glyph in sorted(glyphs, key=ordering):
+
+        if len(words) > 0 and words[-1].is_connected_to(glyph):
+            words[-1].extend(glyph)
+
+        else:
+            words.append(Box.copy(glyph))
+
+    return words
+
+
 def page_to_tables(pdf_page, config=None):
     """
     The central algorithm to pdftables, find all the tables on ``pdf_page`` and
@@ -207,6 +231,9 @@ def page_to_tables(pdf_page, config=None):
     assign_baselines(tables._y_segments,
                      tables._center_lines,
                      tables._baseline_maxheights)
+
+    # Note: word computation must come after baseline computation
+    tables.all_words = make_words(tables.all_glyphs)
 
     tables.bounding_boxes = find_bounding_boxes(tables.all_glyphs, config)
 
@@ -517,6 +544,12 @@ def assign_baselines(y_segments, baselines, baseline_heightmap):
                 active_baselines.add(glyph)
             else:
                 active_baselines.remove(glyph)
+            continue
+
+        if len(active_baselines) == 0:
+            # There is no baseline this glyph might belong to.
+            # TODO(pwaller): huh?
+            # assert False
             continue
 
         # Pick the baseline closest to our position (== glyph.center_y)

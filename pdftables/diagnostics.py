@@ -190,6 +190,12 @@ def make_annotations(table_container):
 
     annotations.append(
         AnnotationGroup(
+            name='all_words',
+            color=Color(0, 0, 1),
+            shapes=convert_rectangles(table_container.all_words)))
+
+    annotations.append(
+        AnnotationGroup(
             name='text_baselines',
             color=Color(0, 0, 1),
             shapes=convert_baselines(table_container.all_glyphs)))

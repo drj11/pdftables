@@ -1,3 +1,6 @@
+"""
+pdftables public interface
+"""
 
 from __future__ import unicode_literals
 """
@@ -7,10 +10,10 @@ Some help here:
 http://denis.papathanasiou.org/2010/08/04/extracting-text-images-from-pdf-files
 """
 
-# TODO Identify multi-column text, for multicolumn text detect per column
-# TODO Dynamic / smarter thresholding
-# TODO Handle argentina_diputados_voting_record.pdf automatically
-# TODO Handle multiple tables on one page
+# TODO(IanHopkinson) Identify multi-column text, for multicolumn text detect per column
+# TODO(IanHopkinson) Dynamic / smarter thresholding
+# TODO(IanHopkinson) Handle argentina_diputados_voting_record.pdf automatically
+# TODO(IanHopkinson) Handle multiple tables on one page
 
 __all__ = ["get_tables", "page_to_tables", "page_contains_tables"]
 

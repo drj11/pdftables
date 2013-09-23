@@ -136,6 +136,11 @@ class CairoPdfPageRenderer(object):
         if self._png_filename is not None:
             self._surface.write_to_png(self._png_filename)
 
+        # NOTE! The flush is rather expensive, since it writes out the svg
+        # data. The profile will show a large amount of time spent inside it.
+        # Removing it won't help the execution time at all, it will just move
+        # it somewhere that the profiler can't see it
+        # (at garbage collection time)
         self._surface.flush()
         self._surface.finish()
 

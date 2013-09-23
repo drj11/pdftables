@@ -135,6 +135,9 @@ def histogram_segments(segments):
 
     consider_segments = list(segments_generator(segments))
 
+    # TODO(pwaller): This function doesn't need to consider the active segments
+    # It should just maintain a counter. (expect a ~O(10%) speedup)
+
     # Look ahead to the next start, and that's the end of the interesting range
     for this, next in zip(consider_segments, consider_segments[1:]):
 

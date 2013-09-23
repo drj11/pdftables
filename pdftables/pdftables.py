@@ -1,3 +1,6 @@
+"""
+pdftables public interface
+"""
 
 from __future__ import unicode_literals
 """
@@ -7,10 +10,10 @@ Some help here:
 http://denis.papathanasiou.org/2010/08/04/extracting-text-images-from-pdf-files
 """
 
-# TODO Identify multi-column text, for multicolumn text detect per column
-# TODO Dynamic / smarter thresholding
-# TODO Handle argentina_diputados_voting_record.pdf automatically
-# TODO Handle multiple tables on one page
+# TODO(IanHopkinson) Identify multi-column text, for multicolumn text detect per column
+# TODO(IanHopkinson) Dynamic / smarter thresholding
+# TODO(IanHopkinson) Handle argentina_diputados_voting_record.pdf automatically
+# TODO(IanHopkinson) Handle multiple tables on one page
 
 __all__ = ["get_tables", "page_to_tables", "page_contains_tables"]
 
@@ -27,10 +30,11 @@ from counter import Counter
 from cStringIO import StringIO
 from operator import attrgetter
 
-from boxes import Box, BoxList, Rectangle
-from config_parameters import ConfigParameters
-from linesegments import segment_histogram, above_threshold
-from pdf_document import PDFDocument, PDFPage
+from .boxes import Box, BoxList, Rectangle
+from .config_parameters import ConfigParameters
+from .line_segments import (segment_histogram, above_threshold, hat_generator,
+                            find_peaks, normal_hat_with_max_length)
+from .pdf_document import PDFDocument, PDFPage
 
 IS_TABLE_COLUMN_COUNT_THRESHOLD = 3
 IS_TABLE_ROW_COUNT_THRESHOLD = 3
@@ -216,6 +220,13 @@ def page_to_tables(pdf_page, config=None):
         xs = table._x_threshold_segs = above_threshold(xs, 3)
         ys = table._y_threshold_segs = above_threshold(ys, 5)
 
+        # Find candidate text centerlines and compute some properties of them.
+        (table._y_point_values,
+         table._center_lines,
+         table._baseline_maxheights) = (
+             determine_text_centerlines(table._y_segments)
+         )
+
         # Compute edges (the set of edges used to be called a 'comb')
         edges = compute_cell_edges(box, xs, ys, config)
         table.column_edges, table.row_edges = edges
@@ -228,6 +239,34 @@ def page_to_tables(pdf_page, config=None):
         tables.add(table)
 
     return tables
+
+
+def determine_text_centerlines(v_segments):
+    """
+    Find candidate centerlines to snap glyphs to.
+    """
+
+    _ = hat_generator(v_segments, value_function=normal_hat_with_max_length)
+    y_hat_points = list(_)
+
+    if not y_hat_points:
+        # No text on the page?
+        return [], [], []
+
+    points, values_maxlengths = zip(*y_hat_points)
+    values, max_lengths = zip(*values_maxlengths)
+
+    point_values = zip(points, values)
+
+    # y-positions of "good" center lines vertically
+    # ("good" is determined using the /\ ("hat") function)
+    center_lines = list(find_peaks(point_values))
+
+    # mapping of y-position (at each hat-point) to maximum glyph
+    # height over that point
+    baseline_maxheights = dict(zip(points, max_lengths))
+
+    return point_values, center_lines, baseline_maxheights
 
 
 def find_bounding_boxes(glyphs, config):
@@ -325,7 +364,7 @@ def compute_table_data(table):
         result = []
         sorted_boxes = sorted(boxes, key=ordering)
 
-        for this, next in zip(sorted_boxes, sorted_boxes[1:]+[None]):
+        for this, next in zip(sorted_boxes, sorted_boxes[1:] + [None]):
             result.append(this.text)
             if next is None:
                 continue

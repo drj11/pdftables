@@ -9,7 +9,7 @@ from os.path import abspath
 
 Point = namedtuple('Point', ['x', 'y'])
 Line = namedtuple('Line', ['start', 'end'])
-Polygon = namedtuple('Polygon', 'lines')
+Polygon = namedtuple('Polygon', 'points')
 Rectangle = namedtuple('Rectangle', ['top_left', 'bottom_right'])
 AnnotationGroup = namedtuple('AnnotationGroup', ['name', 'color', 'shapes'])
 Color = namedtuple('Color', ['red', 'green', 'blue'])
@@ -27,14 +27,14 @@ def draw_line(context, line):
 
 
 def draw_polygon(context, polygon):
-    if len(polygon.lines) == 0:
+    if len(polygon.points) == 0:
         return
 
-    first_line = polygon.lines[0]
+    first_point = polygon.points[0]
 
-    context.move_to(first_line.start.x, first_line.start.y)
-    for line in polygon.lines[1:]:
-        context.line_to(line.start.x, line.start.y)
+    context.move_to(first_point.x, first_point.y)
+    for line in polygon.points[1:]:
+        context.line_to(line.x, line.y)
 
     context.stroke()
 
@@ -77,8 +77,8 @@ class CairoPdfPageRenderer(object):
         # We render everything 3 times, moving
         # one page-width to the right each time.
         self._offset_colors = [
-            (        0, white, white, True),
-            (    width, black, white, True),
+            (0, white, white, True),
+            (width, black, white, True),
             (2 * width, black, black, False)
         ]
 
@@ -105,7 +105,7 @@ class CairoPdfPageRenderer(object):
     def _get_context(filename, width, height):
         SCALE = 1
         # left, middle, right
-        N_RENDERINGS = 3 
+        N_RENDERINGS = 3
 
         surface = cairo.SVGSurface(
             filename, N_RENDERINGS * width * SCALE, height * SCALE)
@@ -136,6 +136,11 @@ class CairoPdfPageRenderer(object):
         if self._png_filename is not None:
             self._surface.write_to_png(self._png_filename)
 
+        # NOTE! The flush is rather expensive, since it writes out the svg
+        # data. The profile will show a large amount of time spent inside it.
+        # Removing it won't help the execution time at all, it will just move
+        # it somewhere that the profiler can't see it
+        # (at garbage collection time)
         self._surface.flush()
         self._surface.finish()
 
@@ -203,7 +208,7 @@ def make_annotations(table_container):
                 name='glyph_histogram_horizontal',
                 color=Color(1, 0, 0),
                 shapes=make_glyph_histogram(
-                    table._h_glyph_histogram, table.bounding_box,
+                    table._x_glyph_histogram, table.bounding_box,
                     direction="horizontal")))
 
         annotations.append(
@@ -211,7 +216,15 @@ def make_annotations(table_container):
                 name='glyph_histogram_vertical',
                 color=Color(1, 0, 0),
                 shapes=make_glyph_histogram(
-                    table._v_glyph_histogram, table.bounding_box,
+                    table._y_glyph_histogram, table.bounding_box,
+                    direction="vertical")))
+
+        annotations.append(
+            AnnotationGroup(
+                name='hat_graph_vertical',
+                color=Color(0, 1, 0),
+                shapes=make_hat_graph(
+                    table._y_point_values, table._center_lines,
                     direction="vertical")))
 
         annotations.append(
@@ -219,7 +232,7 @@ def make_annotations(table_container):
                 name='horizontal_glyph_above_threshold',
                 color=Color(0, 0, 0),
                 shapes=make_thresholds(
-                    table._h_threshold_segs, table.bounding_box,
+                    table._x_threshold_segs, table.bounding_box,
                     direction="horizontal")))
 
         annotations.append(
@@ -227,7 +240,7 @@ def make_annotations(table_container):
                 name='vertical_glyph_above_threshold',
                 color=Color(0, 0, 0),
                 shapes=make_thresholds(
-                    table._v_threshold_segs, table.bounding_box,
+                    table._y_threshold_segs, table.bounding_box,
                     direction="vertical")))
 
     # Draw bounding boxes last so that they appear on top
@@ -255,6 +268,31 @@ def make_thresholds(segments, box, direction):
     return lines
 
 
+def make_hat_graph(hats, center_lines, direction):
+    """
+    Draw estimated text baseline
+    """
+
+    max_value = max(v for _, v in hats)
+    DISPLAY_WIDTH = 25
+
+    points = []
+    polygon = Polygon(points)
+
+    def point(x, y):
+        points.append(Point(x, y))
+
+    for position, value in hats:
+        point(((value / max_value - 1) * DISPLAY_WIDTH), position)
+
+    lines = []
+    for position in center_lines:
+        lines.append(Line(Point(-DISPLAY_WIDTH, position),
+                          Point(0, position)))
+
+    return [polygon] + lines
+
+
 def make_glyph_histogram(histogram, box, direction):
 
     # if direction == "vertical":
@@ -266,48 +304,52 @@ def make_glyph_histogram(histogram, box, direction):
         # There are no glyphs, and nothing to render!
         return []
 
-    lines = []
-    polygon = Polygon(lines)
+    points = []
+    polygon = Polygon(points)
 
-    def line(*args):
-        lines.append(Line(*args))
+    def point(x, y):
+        points.append(Point(x, y))
 
+    # def line(*args):
+        # lines.append(Line(*args))
     previous_value = 0 if direction == "horizontal" else box.bottom
 
-    x = zip(bin_edges, bin_edges[1:], bin_values)
-    for first_edge, second_edge, value in x:
+    x = zip(bin_edges, bin_values)
+    for edge, value in x:
 
         if direction == "horizontal":
             value *= 0.75
             value = box.bottom - value
 
-            line(Point(first_edge, previous_value), Point(first_edge, value))
-            line(Point(first_edge, value), Point(second_edge, value))
+            point(edge, previous_value)
+            point(edge, value)
 
         else:
             value *= 0.25
             value += 7  # shift pixels to the right
 
-            line(Point(previous_value, first_edge), Point(value, first_edge))
-            line(Point(value, first_edge), Point(value, second_edge))
+            point(previous_value, edge)
+            point(value, edge)
 
         previous_value = value
 
+    # Final point is at 0
     if direction == "horizontal":
-        line(Point(second_edge, value), Point(second_edge, 0))
+        point(edge, 0)
     else:
-        line(Point(value, second_edge), Point(0, second_edge))
+        point(box.bottom, edge)
 
-    lines = []
-    if direction == "horizontal":
-        for edge in bin_edges:
-            lines.append(Line(Point(edge, box.bottom),
-                              Point(edge, box.bottom + 5)))
-    else:
-        for edge in bin_edges:
-            lines.append(Line(Point(0, edge), Point(5, edge)))
-
-    return [polygon] + lines
+    # Draw edge density plot (not terribly interesting, should probably be
+    #  deleted)
+    # lines = []
+    # if direction == "horizontal":
+    #     for edge in bin_edges:
+    #         lines.append(Line(Point(edge, box.bottom),
+    #                           Point(edge, box.bottom + 5)))
+    # else:
+    #     for edge in bin_edges:
+    #         lines.append(Line(Point(0, edge), Point(5, edge)))
+    return [polygon]  # + lines
 
 
 def convert_rectangles(boxes):

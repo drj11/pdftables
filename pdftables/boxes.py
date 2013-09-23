@@ -159,9 +159,9 @@ class BoxList(list):
         box edges
         """
         horizontal = [LineSegment(b.left, b.right, b)
-                      for b in self if b.left != b.right]
+                      for b in self]
         vertical = [LineSegment(b.top, b.bottom, b)
-                    for b in self if b.top != b.bottom]
+                    for b in self]
 
         return horizontal, vertical
 

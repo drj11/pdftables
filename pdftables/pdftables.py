@@ -224,7 +224,7 @@ def page_to_tables(pdf_page, config=None):
         (table._y_point_values,
          table._center_lines,
          table._baseline_maxheights) = (
-             determine_text_centerlines(table._v_segments)
+             determine_text_centerlines(table._y_segments)
          )
 
         # Compute edges (the set of edges used to be called a 'comb')

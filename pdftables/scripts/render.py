@@ -28,6 +28,7 @@ Options:
 # Use $ pip install --editable pdftables
 # to install this util in your path.
 
+import sys
 import os
 
 import pdftables

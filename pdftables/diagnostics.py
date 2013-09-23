@@ -208,7 +208,7 @@ def make_annotations(table_container):
                 name='glyph_histogram_horizontal',
                 color=Color(1, 0, 0),
                 shapes=make_glyph_histogram(
-                    table._h_glyph_histogram, table.bounding_box,
+                    table._x_glyph_histogram, table.bounding_box,
                     direction="horizontal")))
 
         annotations.append(
@@ -216,7 +216,7 @@ def make_annotations(table_container):
                 name='glyph_histogram_vertical',
                 color=Color(1, 0, 0),
                 shapes=make_glyph_histogram(
-                    table._v_glyph_histogram, table.bounding_box,
+                    table._y_glyph_histogram, table.bounding_box,
                     direction="vertical")))
 
         annotations.append(
@@ -232,7 +232,7 @@ def make_annotations(table_container):
                 name='horizontal_glyph_above_threshold',
                 color=Color(0, 0, 0),
                 shapes=make_thresholds(
-                    table._h_threshold_segs, table.bounding_box,
+                    table._x_threshold_segs, table.bounding_box,
                     direction="horizontal")))
 
         annotations.append(
@@ -240,7 +240,7 @@ def make_annotations(table_container):
                 name='vertical_glyph_above_threshold',
                 color=Color(0, 0, 0),
                 shapes=make_thresholds(
-                    table._v_threshold_segs, table.bounding_box,
+                    table._y_threshold_segs, table.bounding_box,
                     direction="vertical")))
 
     # Draw bounding boxes last so that they appear on top

@@ -19,16 +19,10 @@ class ConfigParameters(object):
     def __init__(
             self,
             extend_y=False,
-            atomise=True,
             table_top_hint=None,
             table_bottom_hint=None):
 
         self.extend_y = extend_y
         self.table_top_hint = self._validate_hint(table_top_hint)
         self.table_bottom_hint = self._validate_hint(table_bottom_hint)
-        self.atomise = atomise
 
-        if self.atomise is False:
-            warnings.warn("You've set atomise=False but we may remove it "
-                          "soon so please don't write new code which depends "
-                          "on it being False!", PendingDeprecationWarning)

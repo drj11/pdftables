@@ -90,8 +90,8 @@ table, diagnosticData = page_to_tables(
     pdf_page, ConfigParameters(
         extend_y=False,
         table_top_hint=table_top_hint,
-        table_bottom_hint=table_bottom_hint,
-        atomise=False))
+        table_bottom_hint=table_bottom_hint
+        ))
 
 fig, ax1 = pta.plotpage(diagnosticData)
 

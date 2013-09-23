@@ -14,6 +14,10 @@ Example page number lists:
     pdftables-render my.pdf:1
     pdftables-render my.pdf:2,5-10,15-
 
+Example JSON config options:
+
+    '{ "n_glyph_column_threshold": 3, "n_glyph_row_threshold": 5 }'
+
 Options:
     -h --help                   Show this screen.
     --version                   Show version.
@@ -22,6 +26,8 @@ Options:
     -a --ascii                  Show ascii table
     -p --pprint                 pprint.pprint() the table
     -i --interactive            jump into an interactive debugger (ipython)
+    -c --config=<json>          JSON object of config parameters
+
 """
 
 # Use $ pip install --user --editable pdftables
@@ -29,6 +35,7 @@ Options:
 
 import sys
 import os
+import json
 
 import pdftables
 
@@ -59,7 +66,11 @@ def main(args=None):
     if arguments["--debug"]:
         print(arguments)
 
-    config = ConfigParameters()
+    if arguments["--config"]:
+        kwargs = json.loads(arguments["--config"])
+    else:
+        kwargs = {}
+    config = ConfigParameters(**kwargs)
 
     for pdf_filename in arguments["<pdfpath>"]:
         render_pdf(arguments, pdf_filename, config)

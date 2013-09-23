@@ -47,9 +47,30 @@ class PDFPage(BasePDFPage):
     def get_glyphs(self):
         # TODO(pwaller): Result of this should be memoized onto the PDFPage
         #                instance.
+        
+        gtl = patched_poppler.poppler_page_get_text_layout
+        rectangles = gtl(self._poppler)
+
+        return BoxList(rectangles)
+
+        # TODO(pwaller): Salvage this.
+        #
+        # Poppler seems to lie to us because the assertion below fails.
+        # It should return the same number of rectangles as there are
+        # characters in the text, but it does not.
+        # See:
+        #
+        # http://www.mail-archive.com/poppler
+        #        @lists.freedesktop.org/msg06245.html
+        # https://github.com/scraperwiki/pdftables/issues/89
+        # https://bugs.freedesktop.org/show_bug.cgi?id=69608
 
         text = self._poppler.get_text().decode("utf8")
-        rectangles = patched_poppler.poppler_page_get_text_layout(self._poppler)
+
+        # assert len(text) == len(rectangles), (
+        #     "t={0}, r={1}".format(len(text), len(rectangles)))
+
+        # assert False
 
         return BoxList(Box(rect=rect, text=character)
                        for rect, character in zip(rectangles, text))

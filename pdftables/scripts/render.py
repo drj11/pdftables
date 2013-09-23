@@ -6,7 +6,6 @@ Usage:
     pdftables-render [options] <pdfpath>...
     pdftables-render (-h | --help)
     pdftables-render --version
-    pdftables-render --check <pdfpath>
 
 Example page number lists:
 
@@ -58,9 +57,6 @@ def main(args=None):
 
     if arguments["--debug"]:
         print(arguments)
-
-    if arguments["--check"]:
-        return check(arguments["<pdfpath>"][0])
 
     for pdf_filename in arguments["<pdfpath>"]:
         render_pdf(arguments, pdf_filename)
@@ -152,8 +148,3 @@ def render_pdf(arguments, pdf_filename):
                 pprint(table.data)
 
 
-def check(path):
-    fileobj = open(path, 'rb')
-    doc = PDFDocument.from_fileobj(fileobj)
-    tables = page_to_tables(doc.get_page(0))
-    print tables

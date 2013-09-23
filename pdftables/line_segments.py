@@ -33,8 +33,8 @@ class LineSegment(namedtuple("LineSegment", ["start", "end", "object"])):
         return cls(start, end, obj)
 
     def __repr__(self):
-        return 'LineSegment(start={0:6.04f} end={1:6.04f} object={2})'.format(
-            self.start, self.end, self.object)
+        return '{0}(start={1:6.04f} end={2:6.04f} object={3})'.format(
+            type(self).__name__, self.start, self.end, self.object)
 
     @property
     def length(self):
@@ -45,12 +45,19 @@ class LineSegment(namedtuple("LineSegment", ["start", "end", "object"])):
         return (self.start + self.end) / 2
 
 
+def midpoint(segment):
+    yield segment.midpoint
+
+
 def start_end(segment):
-    return iter((segment.start, segment.end))
+    yield segment.start
+    yield segment.end
 
 
-def start_middle_end(segment):
-    return iter((segment.start, segment.midpoint, segment.end))
+def start_midpoint_end(segment):
+    yield segment.start
+    yield segment.midpoint
+    yield segment.end
 
 
 def segments_generator(line_segments, to_visit=start_end):
@@ -67,7 +74,7 @@ def segments_generator(line_segments, to_visit=start_end):
              (4, (1, 4), True)]
 
     The function ``to_visit`` specifies which positions will be visited for
-    each segment and may be ``start_end`` or ``start_middle_end``.
+    each segment and may be ``start_end`` or ``start_midpoint_end``.
 
     If ``to_visit`` is a dictionary instance, it is a mapping from
     ``type(segment)`` onto a visit function. This allows passing in both
@@ -90,7 +97,7 @@ def segments_generator(line_segments, to_visit=start_end):
             _to_visit = to_visit[type(segment)]
 
         # an iterator representing the points to visit for this segment
-        points_to_visit = to_visit(segment)
+        points_to_visit = _to_visit(segment)
         try:
             start = points_to_visit.next()
         except StopIteration:
@@ -188,7 +195,8 @@ def hat_point_generator(line_segments):
     # Set of segments which have appeared so far at this `position`
     new_segments = set()
 
-    segments_by_position = segments_generator(line_segments, start_middle_end)
+    segments_by_position = segments_generator(
+        line_segments, start_midpoint_end)
     last_position = None
 
     for position, segment, disappearing in segments_by_position:

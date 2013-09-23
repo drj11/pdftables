@@ -46,6 +46,8 @@ class Box(object):
 
         self.rect = rect
         self.text = text
+        self.baseline = None
+        self.baseline_y = None
 
 
     def __repr__(self):

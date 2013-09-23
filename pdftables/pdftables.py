@@ -117,7 +117,7 @@ def get_tables_from_document(pdf_document):
 
     result = []
 
-    config = ConfigParameters(extend_y=True)
+    config = ConfigParameters()
 
     # TODO(pwaller): Return one table container with all tables on it?
 
@@ -235,8 +235,8 @@ def page_to_tables(pdf_page, config=None):
         ys = table._y_glyph_histogram = segment_histogram(table._y_segments)
 
         # Threshold them
-        xs = table._x_threshold_segs = above_threshold(xs, 3)
-        ys = table._y_threshold_segs = above_threshold(ys, 5)
+        xs = table._x_threshold_segs = above_threshold(xs, config.n_glyph_column_threshold)
+        ys = table._y_threshold_segs = above_threshold(ys, config.n_glyph_row_threshold)
 
         # Compute edges (the set of edges used to be called a 'comb')
         edges = compute_cell_edges(box, xs, ys, config)
@@ -525,3 +525,5 @@ def assign_baselines(y_segments, baselines, baseline_heightmap):
 
         glyph.object.baseline = baseline
         glyph.object.baseline_y = baseline.midpoint
+
+

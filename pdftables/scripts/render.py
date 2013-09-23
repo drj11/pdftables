@@ -6,7 +6,6 @@ Usage:
     pdftables-render [options] <pdfpath>...
     pdftables-render (-h | --help)
     pdftables-render --version
-    pdftables-render --check <pdfpath>
 
 Example page number lists:
 
@@ -42,6 +41,7 @@ from pdftables.pdf_document import PDFDocument
 from pdftables.diagnostics import render_page, make_annotations
 from pdftables.display import to_string
 from pdftables.pdftables import page_to_tables
+from pdftables.config_parameters import ConfigParameters
 
 
 def main(args=None):
@@ -59,11 +59,10 @@ def main(args=None):
     if arguments["--debug"]:
         print(arguments)
 
-    if arguments["--check"]:
-        return check(arguments["<pdfpath>"][0])
+    config = ConfigParameters()
 
     for pdf_filename in arguments["<pdfpath>"]:
-        render_pdf(arguments, pdf_filename)
+        render_pdf(arguments, pdf_filename, config)
 
 
 def ensure_dirs():
@@ -108,7 +107,7 @@ def parse_page_ranges(range_string, npages):
     return [x - 1 for x in result]
 
 
-def render_pdf(arguments, pdf_filename):
+def render_pdf(arguments, pdf_filename, config):
     ensure_dirs()
 
     page_range_string = ''
@@ -131,7 +130,7 @@ def render_pdf(arguments, pdf_filename):
         png_file = 'png/{0}_{1:02d}.png'.format(
             basename(pdf_filename), page_number)
 
-        table_container = page_to_tables(page)
+        table_container = page_to_tables(page, config)
         annotations = make_annotations(table_container)
 
         render_page(
@@ -152,8 +151,3 @@ def render_pdf(arguments, pdf_filename):
                 pprint(table.data)
 
 
-def check(path):
-    fileobj = open(path, 'rb')
-    doc = PDFDocument.from_fileobj(fileobj)
-    tables = pdftables.page_to_tables(doc.get_page(0))
-    print tables

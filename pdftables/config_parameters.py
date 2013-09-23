@@ -18,11 +18,18 @@ class ConfigParameters(object):
 
     def __init__(
             self,
-            extend_y=False,
-            table_top_hint=None,
-            table_bottom_hint=None):
 
-        self.extend_y = extend_y
+            table_top_hint=None,
+            table_bottom_hint=None,
+
+            n_glyph_column_threshold=3,
+            n_glyph_row_threshold=5
+        ):
+
         self.table_top_hint = self._validate_hint(table_top_hint)
         self.table_bottom_hint = self._validate_hint(table_bottom_hint)
+
+        self.n_glyph_column_threshold = n_glyph_column_threshold
+        self.n_glyph_row_threshold = n_glyph_row_threshold
+
 

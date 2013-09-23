@@ -117,7 +117,7 @@ def get_tables_from_document(pdf_document):
 
     result = []
 
-    config = ConfigParameters(extend_y=True)
+    config = ConfigParameters()
 
     # TODO(pwaller): Return one table container with all tables on it?
 

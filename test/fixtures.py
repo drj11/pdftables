@@ -17,6 +17,5 @@ def fixture(filename):
         return memoized.get(filename)
     here = abspath(dirname(__file__))
     fn = pjoin(here, "..", "fixtures", "sample_data", filename)
-    fd = open(fn, "rb")
-    memoized[filename] = PDFDocument.from_fileobj(fd)
+    memoized[filename] = PDFDocument.from_path(fn)
     return memoized[filename]

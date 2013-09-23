@@ -150,6 +150,15 @@ def page_contains_tables(pdf_page):
         raise TypeError("Page must be PDFPage, not {}".format(
             pdf_page.__class__))
 
+    # TODO(pwaller):
+    #
+    # I would prefer if this function was defined in terms of `page_to_tables`
+    # so that the logic cannot diverge.
+    #
+    # What should the test be?
+    #   len(page_to_tables(page)) > 0?
+    #   Number of tables left after filtering ones that have no data > 0?
+
     box_list = pdf_page.get_glyphs()
 
     boxtop = attrgetter("top")
@@ -187,21 +196,28 @@ def page_to_tables(pdf_page, config=None):
 
         table.glyphs = tables.all_glyphs.inside(box)
 
+        if len(table.glyphs) == 0:
+            # If this happens, then find_bounding_boxes returned somewhere with
+            # no glyphs inside it. Wat.
+            raise RuntimeError("This is an empty table bounding box. "
+                               "That shouldn't happen.")
+
         # Fetch line-segments
+
         # h is lines with fixed y, multiple x values
         # v is lines with fixed x, multiple y values
-        table._h_segments, table._v_segments = table.glyphs.line_segments()
+        table._x_segments, table._y_segments = table.glyphs.line_segments()
 
         # Histogram them
-        h = table._h_glyph_histogram = segment_histogram(table._h_segments)
-        v = table._v_glyph_histogram = segment_histogram(table._v_segments)
+        xs = table._x_glyph_histogram = segment_histogram(table._x_segments)
+        ys = table._y_glyph_histogram = segment_histogram(table._y_segments)
 
         # Threshold them
-        h = table._h_threshold_segs = above_threshold(h, 3)
-        v = table._v_threshold_segs = above_threshold(v, 5)
+        xs = table._x_threshold_segs = above_threshold(xs, 3)
+        ys = table._y_threshold_segs = above_threshold(ys, 5)
 
         # Compute edges (the set of edges used to be called a 'comb')
-        edges = compute_cell_edges(box, h, v, config)
+        edges = compute_cell_edges(box, xs, ys, config)
         table.column_edges, table.row_edges = edges
 
         if table.column_edges and table.row_edges:
@@ -392,15 +408,17 @@ def find_table_bounding_box(box_list, table_top_hint, table_bottom_hint):
     def hints_y():
         miny = float("-inf")
         maxy = float("+inf")
+
         glyphs = [glyph for glyph in box_list if glyph.text is not None]
+
         if table_top_hint:
             top_box = [box for box in glyphs if table_top_hint in box.text]
             if top_box:
                 miny = top_box[0].top
 
         if table_bottom_hint:
-            bottomBox = [
-                box for box in glyphs if table_bottom_hint in box.text]
+            bottomBox = [box for box in glyphs
+                         if table_bottom_hint in box.text]
             if bottomBox:
                 maxy = bottomBox[0].bottom
 

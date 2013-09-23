@@ -343,8 +343,8 @@ def find_peaks(position_values):
 
     # Note that the last `position` can never be yielded.
 
-    _ = zip(position_values, position_values[1:])
-    for (position, value), (_, next_value) in _:
+    successive_pairs = zip(position_values, position_values[1:])
+    for (position, value), (_, next_value) in successive_pairs:
         if increasing:
             if next_value < value:
                 # position is a peak

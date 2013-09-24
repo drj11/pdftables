@@ -39,15 +39,15 @@ class Rectangle(namedtuple("Rectangle", "x1 y1 x2 y2")):
 
 class Box(object):
 
-    def __init__(self, rect, text=None, baseline=None, baseline_y=None):
+    def __init__(self, rect, text=None, barycenter=None, barycenter_y=None):
 
         if not isinstance(rect, Rectangle):
             raise RuntimeError("Box(x) expects isinstance(x, Rectangle)")
 
         self.rect = rect
         self.text = text
-        self.baseline = baseline
-        self.baseline_y = baseline_y
+        self.barycenter = barycenter
+        self.barycenter_y = barycenter_y
 
     def __repr__(self):
         if self is Box.empty_box:
@@ -59,8 +59,8 @@ class Box(object):
         return cls(
             rect=o.rect,
             text=o.text,
-            baseline=o.baseline,
-            baseline_y=o.baseline_y,
+            barycenter=o.barycenter,
+            barycenter_y=o.barycenter_y,
         )
 
     def is_connected_to(self, next):
@@ -76,10 +76,10 @@ class Box(object):
                 TOLERANCE = 10
             return abs(left - right) < TOLERANCE
 
-        shared_baseline = self.baseline_y == next.baseline_y
+        shared_barycenter = self.barycenter_y == next.barycenter_y
         shared_boundary = equal(self.right, next.left)
 
-        return shared_baseline and shared_boundary
+        return shared_barycenter and shared_boundary
 
     def extend(self, next):
         self.text += next.text

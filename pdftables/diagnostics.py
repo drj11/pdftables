@@ -196,9 +196,9 @@ def make_annotations(table_container):
 
     annotations.append(
         AnnotationGroup(
-            name='text_baselines',
+            name='text_barycenters',
             color=Color(0, 0, 1),
-            shapes=convert_baselines(table_container.all_glyphs)))
+            shapes=convert_barycenters(table_container.all_glyphs)))
 
     annotations.append(
         AnnotationGroup(
@@ -283,7 +283,7 @@ def make_thresholds(segments, box, direction):
 
 def make_hat_graph(hats, center_lines, direction):
     """
-    Draw estimated text baseline
+    Draw estimated text barycenter
     """
 
     max_value = max(v for _, v in hats)
@@ -370,10 +370,10 @@ def convert_rectangles(boxes):
             for b in boxes]
 
 
-def convert_baselines(boxes):
-    return [Line(Point(b.left, b.baseline.midpoint),
-                 Point(b.right, b.baseline.midpoint))
-            for b in boxes if b.baseline is not None]
+def convert_barycenters(boxes):
+    return [Line(Point(b.left, b.barycenter.midpoint),
+                 Point(b.right, b.barycenter.midpoint))
+            for b in boxes if b.barycenter is not None]
 
 
 def convert_horizontal_lines(y_edges, bbox):

@@ -180,12 +180,12 @@ def make_words(glyphs):
     """
 
     def ordering(box):
-        assert box.baseline_y is not None, (
-            "Box belongs to no baseline. Has assign_baselines been run?")
-        return (box.baseline_y, box.center_x)
+        assert box.barycenter_y is not None, (
+            "Box belongs to no barycenter. Has assign_barycenters been run?")
+        return (box.barycenter_y, box.center_x)
 
     words = []
-    glyphs = [g for g in glyphs if g.baseline_y is not None]
+    glyphs = [g for g in glyphs if g.barycenter_y is not None]
 
     for glyph in sorted(glyphs, key=ordering):
 
@@ -224,15 +224,15 @@ def page_to_tables(pdf_page, config=None):
     # Find candidate text centerlines and compute some properties of them.
     (tables._y_point_values,
      tables._center_lines,
-     tables._baseline_maxheights) = (
+     tables._barycenter_maxheights) = (
          determine_text_centerlines(tables._y_segments)
      )
 
-    assign_baselines(tables._y_segments,
-                     tables._center_lines,
-                     tables._baseline_maxheights)
+    assign_barycenters(tables._y_segments,
+                       tables._center_lines,
+                       tables._barycenter_maxheights)
 
-    # Note: word computation must come after baseline computation
+    # Note: word computation must come after barycenter computation
     tables.all_words = make_words(tables.all_glyphs)
 
     tables.bounding_boxes = find_bounding_boxes(tables.all_glyphs, config)
@@ -261,9 +261,11 @@ def page_to_tables(pdf_page, config=None):
         xs = table._x_glyph_histogram = segment_histogram(table._x_segments)
         ys = table._y_glyph_histogram = segment_histogram(table._y_segments)
 
+        thres_nc = config.n_glyph_column_threshold
+        thres_nr = config.n_glyph_row_threshold
         # Threshold them
-        xs = table._x_threshold_segs = above_threshold(xs, config.n_glyph_column_threshold)
-        ys = table._y_threshold_segs = above_threshold(ys, config.n_glyph_row_threshold)
+        xs = table._x_threshold_segs = above_threshold(xs, thres_nc)
+        ys = table._y_threshold_segs = above_threshold(ys, thres_nr)
 
         # Compute edges (the set of edges used to be called a 'comb')
         edges = compute_cell_edges(box, xs, ys, config)
@@ -302,12 +304,12 @@ def determine_text_centerlines(v_segments):
 
     # mapping of y-position (at each hat-point) to maximum glyph
     # height over that point
-    baseline_maxheights = dict(
-        (baseline, maxheight)
-        for baseline, maxheight in zip(points, max_lengths)
+    barycenter_maxheights = dict(
+        (barycenter, maxheight)
+        for barycenter, maxheight in zip(points, max_lengths)
         if maxheight is not None)
 
-    return point_values, center_lines, baseline_maxheights
+    return point_values, center_lines, barycenter_maxheights
 
 
 def find_bounding_boxes(glyphs, config):
@@ -389,7 +391,7 @@ def compute_table_data(table):
     def compute_text(boxes):
 
         def ordering(box):
-            return (box.baseline_y, box.center_x)
+            return (box.barycenter_y, box.center_x)
         sorted_boxes = sorted(boxes, key=ordering)
 
         result = []
@@ -399,8 +401,8 @@ def compute_table_data(table):
             if next is None:
                 continue
             centerline_distance = next.center_y - this.center_y
-            # Maximum separation is when the two baselines are far enough away
-            # that the two characters don't overlap anymore
+            # Maximum separation is when the two barycenters are far enough
+            # away that the two characters don't overlap anymore
             max_separation = this.height / 2 + next.height / 2
 
             if centerline_distance >= max_separation:
@@ -509,43 +511,47 @@ class Baseline(LineSegment):
     pass
 
 
-def assign_baselines(y_segments, baselines, baseline_heightmap):
+def assign_barycenters(y_segments, barycenters, barycenter_heightmap):
     """
-    Assign the glyph.baseline and .baseline_y to their "preferred" baseline.
-    "Preferred" is currently defined as closest 
+    Assign the glyph.barycenter and .barycenter_y to their "preferred"
+    barycenter. "Preferred" is currently defined as closest.
+
+    Here we use the term "barycenter" because it is the center of the glyph
+    weighted according to nearby glyphs in Y. It is used to determine which
+    word glyphs belong to, and which order text should be inserted into a cell.
     """
     result = list()
-    # Compute a list of baseline line segments
-    for baseline in baselines:
-        maxheight = baseline_heightmap[baseline]
-        result.append(Baseline.make(baseline - maxheight / 2,
-                                    baseline + maxheight / 2))
+    # Compute a list of barycenter line segments, which are long enough to
+    # overlap all glyphs which are long enough overlap it.
+    for barycenter in barycenters:
+        maxheight = barycenter_heightmap[barycenter]
+        result.append(Baseline.make(barycenter - maxheight / 2,
+                                    barycenter + maxheight / 2))
 
     to_visit = {LineSegment: midpoint, Baseline: start_end}
 
-    active_baselines = set()
+    active_barycenters = set()
 
     segments = segments_generator(result + y_segments, to_visit)
     for position, glyph, disappearing in segments:
-        # Maintain a list of baselines vs position
+        # Maintain a list of barycenters vs position
         if isinstance(glyph, Baseline):
             if not disappearing:
-                active_baselines.add(glyph)
+                active_barycenters.add(glyph)
             else:
-                active_baselines.remove(glyph)
+                active_barycenters.remove(glyph)
             continue
 
-        if len(active_baselines) == 0:
-            # There is no baseline this glyph might belong to.
-            # TODO(pwaller): huh?
+        if len(active_barycenters) == 0:
+            # There is no barycenter this glyph might belong to.
+            # TODO(pwaller): huh? This should surely never happen.
+            # Investigate why by turning this assert on.
             # assert False
             continue
 
-        # Pick the baseline closest to our position (== glyph.center_y)
-        baseline = min(active_baselines,
-                       key=lambda b: abs(b.midpoint - position))
+        # Pick the barycenter closest to our position (== glyph.center_y)
+        barycenter = min(active_barycenters,
+                         key=lambda b: abs(b.midpoint - position))
 
-        glyph.object.baseline = baseline
-        glyph.object.baseline_y = baseline.midpoint
-
-
+        glyph.object.barycenter = barycenter
+        glyph.object.barycenter_y = barycenter.midpoint

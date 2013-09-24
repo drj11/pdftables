@@ -5,7 +5,7 @@ Backend abstraction for PDFDocuments
 import abc
 import os
 
-DEFAULT_BACKEND = "pdfminer"
+DEFAULT_BACKEND = "poppler"
 BACKEND = os.environ.get("PDFTABLES_BACKEND", DEFAULT_BACKEND).lower()
 
 # TODO(pwaller): Use abstract base class?
@@ -17,7 +17,7 @@ class PDFDocument(object):
     __metaclass__ = abc.ABCMeta
 
     @classmethod
-    def _get_backend(cls):
+    def get_backend(cls, backend=None):
         """
         Returns the PDFDocument class to use based on configuration from
         enviornment or pdf_document.BACKEND
@@ -26,20 +26,23 @@ class PDFDocument(object):
         if not issubclass(cls, PDFDocument):
             return cls
 
+        if backend is None:
+            backend = BACKEND
+
         # Imports have to go inline to avoid circular imports with the backends
-        if BACKEND == "pdfminer":
+        if backend == "pdfminer":
             from pdf_document_pdfminer import PDFDocument as PDFDoc
             return PDFDoc
 
-        elif BACKEND == "poppler":
+        elif backend == "poppler":
             from pdf_document_poppler import PDFDocument as PDFDoc
             return PDFDoc
 
-        raise NotImplementedError("Unknown backend '{0}'".format(BACKEND))
+        raise NotImplementedError("Unknown backend '{0}'".format(backend))
 
     @classmethod
     def from_path(cls, path):
-        Class = cls._get_backend()
+        Class = cls.get_backend()
         return Class(path)
 
     @classmethod

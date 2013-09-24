@@ -33,6 +33,13 @@ def to_string(table):
     return unicode(result.read())
 
 
+def to_html(table):
+    builder = []
+    for row in table:
+        builder.append('<tr><td>' + '</td><td>'.join(row) + '</td></tr>')
+    return '<table border=1>\n' + '\n'.join(builder) + '\n</table>'
+
+
 def get_dimensions(table):
     """
     Returns columns, rows for a table.

@@ -56,37 +56,46 @@ RENDERERS[Rectangle] = draw_rectangle
 RENDERERS[Polygon] = draw_polygon
 
 
-class CairoPdfPageRenderer(object):
+class CairoImageOptions(object):
+    white = poppler.Color()
+    white.red = white.green = white.blue = 65535
+    black = poppler.Color()
+    black.red = black.green = black.blue = 0
+    blue = poppler.Color()
+    blue.red = blue.green = blue.blue = 0
+    blue.blue = 65535
+    modes = {"three": [
+                        [(white, white, True),
+                         (black, white, True),
+                         (black, black, False),
+                        ],
+                        1,
+                        1
+                    ],
+               "one": [
+                        [(white, black, True)],
+                        0.666,
+                        0
+                    ]
+              }
+    def __init__(self, mode="three"):
+        self._colors, self.scale, self.doodle_index = CairoImageOptions.modes[mode]
 
-    def __init__(self, pdf_page, svg_filename, png_filename):
+
+class CairoPdfPageRenderer(object):
+    def __init__(self, pdf_page, svg_filename, png_filename, render_mode):
         self._svg_filename = abspath(svg_filename)
         self._png_filename = abspath(png_filename) if png_filename else None
+        self.width, self.height = pdf_page.get_size()
         self._context, self._surface = self._get_context(
-            svg_filename, *pdf_page.get_size())
+            svg_filename, self.width * len(render_mode._colors), self.height, render_mode.scale)  # TODO: scale
 
-        white = poppler.Color()
-        white.red = white.green = white.blue = 65535
-        black = poppler.Color()
-        black.red = black.green = black.blue = 0
-        # red = poppler.Color()
-        # red.red = red.green = red.blue = 0
-        # red.red = 65535
 
-        width = pdf_page.get_size()[0]
-
-        # We render everything 3 times, moving
-        # one page-width to the right each time.
-        self._offset_colors = [
-            (0, white, white, True),
-            (width, black, white, True),
-            (2 * width, black, black, False)
-        ]
-
-        for offset, fg_color, bg_color, render_graphics in self._offset_colors:
+        for pagenum, (fg_color, bg_color, render_graphics) in enumerate(render_mode._colors):
             # Render into context, with a different offset
             # each time.
             self._context.save()
-            self._context.translate(offset, 0)
+            self._context.translate(self.width * pagenum, 0)
 
             sel = poppler.Rectangle()
             sel.x1, sel.y1 = (0, 0)
@@ -102,18 +111,14 @@ class CairoPdfPageRenderer(object):
             self._context.restore()
 
     @staticmethod
-    def _get_context(filename, width, height):
-        SCALE = 1
-        # left, middle, right
-        N_RENDERINGS = 3
-
+    def _get_context(filename, width, height, scale = 1):
         surface = cairo.SVGSurface(
-            filename, N_RENDERINGS * width * SCALE, height * SCALE)
+            filename, width * scale, height * scale)
         # srf = cairo.ImageSurface(
         #          cairo.FORMAT_RGB24, int(w*SCALE), int(h*SCALE))
 
         context = cairo.Context(surface)
-        context.scale(SCALE, SCALE)
+        context.scale(scale, scale)
 
         # Set background color to white
         context.set_source_rgb(1, 1, 1)
@@ -121,14 +126,15 @@ class CairoPdfPageRenderer(object):
 
         return context, surface
 
-    def draw(self, shape, color):
+    def draw(self, shape, color, doodle_index=1):
         self._context.save()
         self._context.set_line_width(1)
         self._context.set_source_rgba(color.red,
                                       color.green,
                                       color.blue,
                                       0.5)
-        self._context.translate(self._offset_colors[1][0], 0)
+        # TODO self._context.translate(self._offset_colors[1][0], 0)
+        self._context.translate(self.width * doodle_index, 0)
         RENDERERS[type(shape)](self._context, shape)
         self._context.restore()
 
@@ -146,20 +152,20 @@ class CairoPdfPageRenderer(object):
 
 
 def render_page(pdf_filename, page_number, annotations, svg_file=None,
-                png_file=None):
+                png_file=None, mode="three"):
     """
     Render a single page of a pdf with graphical annotations added.
     """
 
     page = extract_pdf_page(pdf_filename, page_number)
-
-    renderer = CairoPdfPageRenderer(page, svg_file, png_file)
+    render_mode = CairoImageOptions(mode)
+    renderer = CairoPdfPageRenderer(page, svg_file, png_file, render_mode=render_mode)
     for annotation in annotations:
         assert isinstance(annotation, AnnotationGroup), (
             "annotations: {0}, annotation: {1}".format(
                 annotations, annotation))
         for shape in annotation.shapes:
-            renderer.draw(shape, annotation.color)
+            renderer.draw(shape, annotation.color, render_mode.doodle_index)
 
     renderer.flush()
 

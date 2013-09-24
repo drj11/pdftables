@@ -27,7 +27,8 @@ Options:
     -p --pprint                 pprint.pprint() the table
     -i --interactive            jump into an interactive debugger (ipython)
     -c --config=<json>          JSON object of config parameters
-
+    --html                      Make a webpage for the data
+    --render-mode=<mode>        Set rendering parameters [default: one]
 """
 
 # Use $ pip install --user --editable pdftables
@@ -46,9 +47,10 @@ from docopt import docopt
 
 from pdftables.pdf_document import PDFDocument
 from pdftables.diagnostics import render_page, make_annotations
-from pdftables.display import to_string
+from pdftables.display import to_string, to_html, get_dimensions
 from pdftables.pdftables import page_to_tables
 from pdftables.config_parameters import ConfigParameters
+import datetime
 
 
 def main(args=None):
@@ -72,20 +74,33 @@ def main(args=None):
         kwargs = {}
     config = ConfigParameters(**kwargs)
 
+    all_files = []
     for pdf_filename in arguments["<pdfpath>"]:
-        render_pdf(arguments, pdf_filename, config)
+        all_files.extend(render_pdf(arguments, pdf_filename))
+
+    if arguments["--html"]:
+        with open("index.html", "w") as index:
+            isonow = datetime.datetime.now().isoformat()
+            index.write('<h1>{now}</h1>'.format(now=isonow))
+            for f, info in all_files:
+                index.write("""
+                <span style="float:left">
+                <div style="text-align:center"><b>{f}</b>
+                <a href='html/{f}.html'>{dim}</a></div>
+                <a href='svg/{f}.svg'>
+                <img src='png/{f}.png'>
+                </a>
+                </span>
+                """.format(f=f, dim=info['dim']))
+        print "Created index.html"
 
 
-def ensure_dirs():
-    try:
-        os.mkdir('png')
-    except OSError:
-        pass
-
-    try:
-        os.mkdir('svg')
-    except OSError:
-        pass
+def ensure_dirs(dirlist):
+    for directory in dirlist:
+        try:
+            os.mkdir(directory)
+        except OSError:
+            pass
 
 
 def parse_page_ranges(range_string, npages):
@@ -118,8 +133,9 @@ def parse_page_ranges(range_string, npages):
     return [x - 1 for x in result]
 
 
-def render_pdf(arguments, pdf_filename, config):
-    ensure_dirs()
+def render_pdf(arguments, pdf_filename):
+    config = ConfigParameters()
+    ensure_dirs(['png', 'svg'])
 
     page_range_string = ''
     page_set = []
@@ -131,27 +147,46 @@ def render_pdf(arguments, pdf_filename, config):
     if page_range_string:
         page_set = parse_page_ranges(page_range_string, len(doc))
 
+    output_files = []
     for page_number, page in enumerate(doc.get_pages()):
+        output_file = '{0}_{1:02d}'.format(
+            basename(pdf_filename), page_number)
+
         if page_set and page_number not in page_set:
             # Page ranges have been specified by user, and this page not in
             continue
 
-        svg_file = 'svg/{0}_{1:02d}.svg'.format(
-            basename(pdf_filename), page_number)
-        png_file = 'png/{0}_{1:02d}.png'.format(
-            basename(pdf_filename), page_number)
-
+        svg_file = 'svg/%s.svg' % output_file
+        png_file = 'png/%s.png' % output_file
+        html_file = 'html/%s.html' % output_file
         table_container = page_to_tables(page, config)
         annotations = make_annotations(table_container)
 
         render_page(
-            pdf_filename, page_number, annotations, svg_file, png_file)
+            pdf_filename, page_number, annotations,
+            svg_file, png_file, mode=arguments['--render-mode'])
 
         print "Rendered", svg_file, png_file
 
         if arguments["--interactive"]:
             from ipdb import set_trace
             set_trace()
+
+        if arguments["--html"]:
+            ensure_dirs(['html'])
+            further_info = {'dim': []}
+            with open(html_file, "w") as html_handle:
+
+            ## WRITE HEADER, GLOBAL STATS
+
+                for i, table in enumerate(table_container):
+                    html_handle.write("\n\n<h2>Tables</h2>\n")
+                    dim = get_dimensions(table.data)
+                    html_handle.write("%d: %r" % (i, dim))
+
+                for i, table in enumerate(table_container):
+                    html_handle.write("\n\n<h2>Table %d</h2>\n" % i)
+                    html_handle.write(to_html(table.data))
 
         for table in table_container:
 
@@ -161,4 +196,17 @@ def render_pdf(arguments, pdf_filename, config):
             if arguments["--pprint"]:
                 pprint(table.data)
 
+            further_info = {"dim": get_dimensions(table.data)}
+            output_files.append([output_file, further_info])
 
+    return output_files
+
+
+def check(path):
+    fileobj = open(path, 'rb')
+    doc = PDFDocument.from_fileobj(fileobj)
+    tables = pdftables.page_to_tables(doc.get_page(0))
+    print tables
+
+if __name__ == "__main__":
+    main()

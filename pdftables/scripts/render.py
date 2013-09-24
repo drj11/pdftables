@@ -33,6 +33,13 @@ Options:
 # Use $ pip install --user --editable pdftables
 # to install this util in your path.
 
+# Suppresses the warning:
+# /usr/lib/python2.7/dist-packages/gtk-2.0/gtk/__init__.py:57: GtkWarning: could not open display
+import warnings
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore",category=Warning)
+    import gtk
+
 import sys
 import os
 import json

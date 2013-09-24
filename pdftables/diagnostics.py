@@ -73,7 +73,7 @@ class CairoImageOptions(object):
                         1
                     ],
                "one": [
-                        [(white, black, True)],
+                        [(black, white, True)],
                         0.666,
                         0
                     ]

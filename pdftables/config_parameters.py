@@ -13,8 +13,6 @@ class ConfigParameters(object):
        will write code which relies on the default value today, so changing
        that will give them unexpected behaviour.
     """
-    def _validate_hint(self, hint):
-        return hint
 
     def __init__(
             self,
@@ -26,8 +24,8 @@ class ConfigParameters(object):
             n_glyph_row_threshold=5
         ):
 
-        self.table_top_hint = self._validate_hint(table_top_hint)
-        self.table_bottom_hint = self._validate_hint(table_bottom_hint)
+        self.table_top_hint = table_top_hint
+        self.table_bottom_hint = table_bottom_hint
 
         self.n_glyph_column_threshold = n_glyph_column_threshold
         self.n_glyph_row_threshold = n_glyph_row_threshold

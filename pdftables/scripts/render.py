@@ -156,9 +156,9 @@ def render_pdf(arguments, pdf_filename):
             # Page ranges have been specified by user, and this page not in
             continue
 
-        svg_file = 'svg/%s.svg' % output_file
-        png_file = 'png/%s.png' % output_file
-        html_file = 'html/%s.html' % output_file
+        svg_file = 'svg/{f}.svg'.format(f=output_file)
+        png_file = 'png/{f}.png'.format(f=output_file)
+        html_file = 'html/{f}.html'.format(f=output_file)
         table_container = page_to_tables(page, config)
         annotations = make_annotations(table_container)
 

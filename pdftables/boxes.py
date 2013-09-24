@@ -39,21 +39,51 @@ class Rectangle(namedtuple("Rectangle", "x1 y1 x2 y2")):
 
 class Box(object):
 
-    def __init__(self, rect, text=None):
+    def __init__(self, rect, text=None, barycenter=None, barycenter_y=None):
 
         if not isinstance(rect, Rectangle):
             raise RuntimeError("Box(x) expects isinstance(x, Rectangle)")
 
         self.rect = rect
         self.text = text
-        self.baseline = None
-        self.baseline_y = None
-
+        self.barycenter = barycenter
+        self.barycenter_y = barycenter_y
 
     def __repr__(self):
         if self is Box.empty_box:
             return "<Box rect=empty>"
-        return "<Box text={0!r:5s} rect={1}>".format(self.text, self.rect)
+        return "<Box rect={0} text={1!r:5s}>".format(self.rect, self.text)
+
+    @classmethod
+    def copy(cls, o):
+        return cls(
+            rect=o.rect,
+            text=o.text,
+            barycenter=o.barycenter,
+            barycenter_y=o.barycenter_y,
+        )
+
+    def is_connected_to(self, next):
+        if self.text.strip() == "" or next.text.strip() == "":
+            # Whitespace can't be connected into a word.
+            return False
+
+        def equal(left, right):
+            # Distance in pixels
+            TOLERANCE = 0.5
+            # The almond board paradox
+            if self.text.endswith("("):
+                TOLERANCE = 10
+            return abs(left - right) < TOLERANCE
+
+        shared_barycenter = self.barycenter_y == next.barycenter_y
+        shared_boundary = equal(self.right, next.left)
+
+        return shared_barycenter and shared_boundary
+
+    def extend(self, next):
+        self.text += next.text
+        self.rect = self.rect._replace(x2=next.right)
 
     def clip(self, *rectangles):
         """
@@ -129,9 +159,9 @@ class BoxList(list):
         box edges
         """
         horizontal = [LineSegment(b.left, b.right, b)
-                      for b in self if b.left != b.right]
+                      for b in self]
         vertical = [LineSegment(b.top, b.bottom, b)
-                    for b in self if b.top != b.bottom]
+                    for b in self]
 
         return horizontal, vertical
 

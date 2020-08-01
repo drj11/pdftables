@@ -10,7 +10,7 @@ conf = dict(name='pdftables',
     description="Parses PDFs and extracts what it believes to be tables.",
     long_description=long_desc,
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 7 - Inactive",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: BSD License",
         "Operating System :: POSIX :: Linux",

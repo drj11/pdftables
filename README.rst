@@ -8,6 +8,8 @@ pdftables - a library for extracting tables from PDF files
 .. image:: https://pypip.in/v/pdftables/badge.png
    :target: https://pypi.python.org/pypi/pdftables
 
+**pdftables is no longer maintained**. The development contined commercially at `pdftables.com <https://pdftables.com/>`_.
+
 ..
 
 `This Readme, and more, is available on ReadTheDocs. <http://pdftables.readthedocs.org/>`_
